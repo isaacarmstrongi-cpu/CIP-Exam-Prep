@@ -31,3 +31,16 @@ test('HTTP authentication, origin protection, signed webhook, closed enrollment 
  assert.equal((await fetch(`${base}/api/stripe/webhook`,{method:'POST',headers:{'Stripe-Signature':header},body:payload})).status,200);
 });
 
+
+test('checkout uses the current card-only API contract and reuses open checkout',async t=>{
+ const f=await fixture(t);let captured,calls=0;
+ const stripe={checkout:{sessions:{create:async params=>{captured=params;calls++;return {id:'cs_contract',url:'https://checkout.stripe.com/example',expires_at:Math.floor(Date.now()/1000)+3600};}}}};
+ const server=createApp({store:f.s,origin,stripe,price:'price_contract',webhookSecret:secret,enrollment:true,secure:false});await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const url=`http://127.0.0.1:${server.address().port}/mcip/api/checkout`;
+ const options={method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:`procip_session=${f.token}`},body:'{}'};
+ assert.equal((await fetch(url,options)).status,200);
+ assert.deepEqual(captured.allowed_payment_method_types,['card']);assert.equal(Object.hasOwn(captured,'payment_method_types'),false);
+ assert.equal(captured.mode,'payment');assert.deepEqual(captured.line_items,[{price:'price_contract',quantity:1}]);
+ assert.ok(captured.expires_at>Math.floor(Date.now()/1000)+1800);assert.equal(captured.client_reference_id,f.user.id);
+ assert.equal((await fetch(url,options)).status,200);assert.equal(calls,1);
+});

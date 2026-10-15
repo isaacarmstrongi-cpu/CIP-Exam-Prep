@@ -67,7 +67,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
           try{
             const old=store.db.prepare('SELECT * FROM checkouts WHERE user_id=? ORDER BY expires DESC LIMIT 1').get(user.id);
             if(old&&old.expires>now())return json(res,200,{url:old.url});
-            const session=await stripe.checkout.sessions.create({mode:'payment',payment_method_types:['card'],line_items:[{price,quantity:1}],client_reference_id:user.id,customer_email:user.email,success_url:`${origin}${base}/student/?payment=complete`,cancel_url:`${origin}${base}/student/?payment=cancelled`,expires_at:Math.floor(now()/1000)+1800},{idempotencyKey:`procip-${user.id}-${Math.floor(now()/1800000)}`});
+            const session=await stripe.checkout.sessions.create({mode:'payment',allowed_payment_method_types:['card'],line_items:[{price,quantity:1}],client_reference_id:user.id,customer_email:user.email,success_url:`${origin}${base}/student/?payment=complete`,cancel_url:`${origin}${base}/student/?payment=cancelled`,expires_at:Math.floor(now()/1000)+3600},{idempotencyKey:`procip-${user.id}-${Math.floor(now()/1800000)}`});
             store.db.prepare('INSERT OR IGNORE INTO checkouts VALUES(?,?,?,?)').run(user.id,session.id,session.url,session.expires_at*1000);
             return json(res,200,{url:session.url});
           }finally{checkoutLocks.delete(user.id);}
@@ -98,3 +98,4 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
   const server=createApp({store:new Store(dbPath,bank),origin,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',secure:!local});
   server.listen(Number(process.env.PORT||4190),'127.0.0.1',()=>console.log('Student portal listening on the loopback interface. Enrollment is '+(process.env.ENROLLMENT_OPEN==='true'?'configured open':'closed')+'.'));
 }
+
