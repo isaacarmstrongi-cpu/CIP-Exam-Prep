@@ -1,4 +1,4 @@
-# MCIP Exam Prep
+# Pro CIP Prep
 
 A responsive, independent CIP practice application with 500 original questions in five 100-question exams (Sets 4–8).
 
