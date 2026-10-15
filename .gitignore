@@ -1,0 +1,8 @@
+node_modules/
+.env*
+.DS_Store
+*.log
+.openai/*.tar.gz
+.openai/workflow*
+.openai/deploy-result*
+qa/
