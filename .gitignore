@@ -6,3 +6,6 @@ node_modules/
 .openai/workflow*
 .openai/deploy-result*
 qa/
+private/
+*.sqlite*
+paid/IMPLEMENTATION-STATUS.md

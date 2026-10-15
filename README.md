@@ -68,3 +68,13 @@ A private Sites deployment is configured in `.openai/hosting.json`. GitHub pushe
 ## Verification performed
 
 Automated tests check 500 unique items, five weighted forms, all correct-letter positions, source locators, perfect/incorrect/partial scoring, deadline behavior, invalid saved data, and manual submission. Browser checks cover starting an exam, selecting an answer, flagging, navigation, refresh/resume, scoring, answer filtering, and desktop/mobile layout.
+
+## Student portal (in development — enrollment closed)
+
+The `paid/` service adds server-stored student accounts and attempts, signed Stripe payment confirmation, 90-day entitlements, and server-authoritative scoring and deadlines. Run with Node 24 and `PUBLIC_ORIGIN` set; the entry point is `paid/server.mjs`. Stripe configuration and `ENROLLMENT_OPEN=true` are required for checkout. Keep enrollment closed until verification is complete.
+
+Never serve the repository root or the `dist` demo as the paid portal. The HTTP service exposes only its explicit student assets and API routes. Keep the database and complete question bank outside the public web directory. Secrets belong in protected server configuration, never in source control.
+
+Before launch: complete email verification/account recovery, production rate limiting, Stripe sandbox purchase testing, private deployment and backups, refund/privacy/tax configuration, and review historical public question-bank exposure. The current implementation is not launch-ready.
+
+`npm test` includes access-expiry, payment replay/refund, ownership, hidden answer keys, timing, authentication, origin and webhook-signature checks. These tests do not replace a real Stripe sandbox checkout and deployment test.
