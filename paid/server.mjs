@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Stripe from 'stripe';
@@ -89,7 +89,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e instanceof Problem?e.message:'Something went wrong. Please try again.'});else res.end();if(!(e instanceof Problem))console.error('Request failed:',e.name);}
   });
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.url)){
   const origin=process.env.PUBLIC_ORIGIN;if(!origin)throw new Error('PUBLIC_ORIGIN is required.');
   const local=origin.startsWith('http://127.0.0.1:');if(!local&&!origin.startsWith('https://'))throw new Error('HTTPS is required.');
   const bank=JSON.parse(readFileSync(process.env.BANK_PATH||resolve(root,'../dist/data/questions.json'),'utf8'));
