@@ -14,6 +14,8 @@ try {
     if (Test-Path -LiteralPath $archive) { throw 'This release archive already exists; keep the original or choose a different output directory.' }
     git archive --format=tar.gz --output=$archive HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Release packaging failed.' }
+    node -e 'const {execFileSync}=require("node:child_process");const shell=execFileSync("tar",["-xOf",process.argv[1],"ops/deploy-uploaded-release.sh"]);if(shell.includes(13))throw Error("Deployment script must use LF line endings in the archive.");' $archive
+    if ($LASTEXITCODE -ne 0) { throw 'Release archive contains incompatible shell line endings.' }
     $checksum = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     [ordered]@{revision=$revision;sha256=$checksum;archive=[System.IO.Path]::GetFileName($archive)} |
         ConvertTo-Json | Set-Content -LiteralPath "$archive.json" -Encoding utf8
