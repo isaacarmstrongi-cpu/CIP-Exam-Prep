@@ -1,4 +1,4 @@
-import {readFileSync,readdirSync,lstatSync,unlinkSync,realpathSync} from 'node:fs';
+import {readFileSync,readdirSync,lstatSync,unlinkSync,realpathSync,existsSync,chownSync,chmodSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
@@ -28,8 +28,15 @@ export async function maintainDatabase(source,directory,{apply=false,now=Date.no
  if(!lstatSync(source).isFile()||lstatSync(source).isSymbolicLink())throw Error('Database must be an existing regular file.');
  const bank=JSON.parse(readFileSync(new URL('../dist/data/questions.json',import.meta.url)));
  if(apply)await snapshot(source,directory);
- const store=new Store(source,bank,now);let result;
- try{store.db.exec('PRAGMA secure_delete=ON');result=maintainRetention(store,{apply});if(apply)store.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');}finally{store.db.close();}
+ const owner=lstatSync(source),store=new Store(source,bank,now);let result;
+ try{store.db.exec('PRAGMA secure_delete=ON');result=maintainRetention(store,{apply});if(apply)store.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');}finally{
+  store.db.close();
+  // Root maintenance must not leave newly-created SQLite sidecars unreadable to the app.
+  if(process.getuid?.()===0)for(const path of [source,`${source}-wal`,`${source}-shm`])if(existsSync(path)){
+   if(lstatSync(path).isSymbolicLink()||!lstatSync(path).isFile())throw Error('Unexpected database file type.');
+   chownSync(path,owner.uid,owner.gid);chmodSync(path,0o600);
+  }
+ }
  if(apply){const check=new DatabaseSync(source,{readOnly:true});try{if(check.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('Post-maintenance database check failed.');}finally{check.close();}}
  const removedSnapshots=apply?await pruneSnapshots(directory,now()):0;
  return {...result,removedSnapshots};
