@@ -90,3 +90,7 @@ A private Sites deployment is configured in `.openai/hosting.json`. GitHub pushe
 ## Verification performed
 
 Automated tests check 500 unique items, five weighted forms, all correct-letter positions, source locators, perfect/incorrect/partial scoring, deadline behavior, invalid saved data, and manual submission. Browser checks cover starting an exam, selecting an answer, flagging, navigation, refresh/resume, scoring, answer filtering, and desktop/mobile layout.
+
+## Marked-question review
+
+During an active exam or study session, **Mark for review** saves a mark independently of the selected answer. **Review marked (N)** switches to the marked-only map and previous/next navigation, keeping original question numbers. Answered and unanswered marks are counted separately. Removing a mark advances to the next remaining marked item, or shows an empty list with **Show all questions**. The exam deadline continues unchanged. Marks persist in the account; the view filter itself resets when a new attempt is opened. Existing results filtering remains available after submission.
