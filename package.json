@@ -9,6 +9,7 @@
     "check": "node --check dist/app.mjs && node --test"
   },
   "dependencies": {
+    "openid-client": "^6.8.8",
     "stripe": "^23.0.0"
   }
 }

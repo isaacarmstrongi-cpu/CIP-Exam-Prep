@@ -9,6 +9,8 @@ import { createEmailSender,createOwnerAlertSender } from './email.mjs';
 import {startOwnerAlerts} from './owner-alerts.mjs';
 import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage,purchaseConfirmationPage} from './policies.mjs';
 import {TRIAL_VERSION} from './trials.mjs';
+import {createHash,randomBytes} from 'node:crypto';
+import {createIdentityProvider,providerSettings,PROVIDERS} from './social.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
 export function clientAddress(req,trustProxy=false){
   const peer=req.socket.remoteAddress;
@@ -19,18 +21,21 @@ export function clientAddress(req,trustProxy=false){
   }
   return peer;
 }
-export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false,policiesApproved=!live,launchApproved=!live,trialEnabled=false}) {
+export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false,policiesApproved=!live,launchApproved=!live,trialEnabled=false,social=null}) {
   if(trialEnabled&&(live||!requireVerification||!mailer||!policiesApproved))throw new Error('Friends trial requires an isolated non-live service, approved policies and verified account email.');
   const checkoutLocks=new Set();
   const ready=()=>Boolean(!trialEnabled&&enrollment&&stripe&&price&&webhookSecret&&policiesApproved&&launchApproved&&(!requireVerification||mailer));
   const sendAction=(user,purpose)=>{const token=store.issueEmailAction(user.id,purpose);Promise.resolve().then(()=>mailer({to:user.email,purpose,token})).catch(()=>console.error('Account email delivery failed; resend is available.'));};
   const json=(res,status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));};
   const cookie=token=>`procip_session=${token}; Path=${base||'/'}; HttpOnly; SameSite=Strict; Max-Age=${token?604800:0}${secure?'; Secure':''}`;
+  const bindingCookie=token=>`procip_oauth=${token}; Path=${base||'/'}; HttpOnly; SameSite=Lax; Max-Age=${token?600:0}${secure?'; Secure':''}`;
+  const readCookie=(req,name)=>req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(name+'='))?.slice(name.length+1)||'';
+  const redirect=(res,fragment,headers={})=>{res.writeHead(303,{Location:`${origin}${base}/student/${fragment||''}`,...headers});res.end();};
   async function body(req) {
     const parts=[];let n=0;for await(const part of req){n+=part.length;if(n>65536)throw new Problem(413,'Request too large.');parts.push(part);}return Buffer.concat(parts);
   }
   return http.createServer(async(req,res)=>{
-    res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');
+    res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     try {
       const url=new URL(req.url,origin),path=url.pathname;
@@ -63,7 +68,50 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         let data={};if(req.method!=='GET'){try{data=JSON.parse((await body(req)).toString());}catch(e){if(e instanceof Problem)throw e;throw new Problem(400,'Invalid request.');}if(!data||typeof data!=='object'||Array.isArray(data))throw new Problem(400,'Invalid request.');}
         const token=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('procip_session='))?.slice(15)||'';
         const user=store.user(token);
-        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,trial:trialEnabled,requireVerification,recoveryAvailable:Boolean(mailer),policies:{version:POLICY_VERSION,approved:policiesApproved},serverTime:now()});
+        const socialRoute=path.match(new RegExp(`^${base}/api/social/(google|microsoft)/(start|callback)$`));
+        if(socialRoute){
+          const [,provider,operation]=socialRoute;if(!social?.names().some(p=>p.id===provider))throw new Problem(404,'This sign-in option is not available.');
+          store.limit(`social:${address}`,30);
+          if(operation==='start'&&req.method==='POST'){
+            const purpose=data.purpose;let context={purpose};
+            if(purpose==='signup'){
+              if(!trialEnabled)throw new Problem(403,'New accounts need a trial invitation.');
+              if(data.accepted!==true||data.version!==TRIAL_VERSION)throw new Problem(400,'Read and agree to the free-trial terms before continuing.');
+              context.inviteId=store.trials.reference(data.invite);context.agreement={accepted:true,version:TRIAL_VERSION};
+            }else if(purpose==='link'){
+              if(!user?.emailVerified||now()-user.authenticatedAt>10*60000)throw new Problem(401,'Sign out and sign in again before connecting a sign-in method.');
+              context.userId=user.id;context.sessionHash=createHash('sha256').update(token).digest('hex');
+            }else if(purpose!=='login')throw new Problem(400,'Choose a sign-in action.');
+            const binding=randomBytes(32).toString('base64url'),flow=store.social.begin(provider,binding,context);
+            const target=await social.authorization(provider,{...flow,redirect:`${origin}${base}/api/social/${provider}/callback`});
+            const u=new URL(target);if(u.protocol!=='https:'||u.hostname!==PROVIDERS[provider].host)throw new Error('Unexpected sign-in endpoint.');
+            return json(res,200,{url:target},{'Set-Cookie':bindingCookie(binding)});
+          }
+          if(operation==='callback'&&req.method==='GET'){
+            try{
+              const binding=readCookie(req,'procip_oauth'),state=url.searchParams.get('state'),flow=store.social.takeState(state,binding,provider);
+              if(url.searchParams.has('error'))throw new Problem(400,'Provider sign-in was cancelled.');
+              const identity=await social.identity(provider,url,{...flow,state});
+              const result=store.social.authenticated(identity,flow.context,binding);
+              if(result.proof)return redirect(res,`#social_profile=${result.proof}`);
+              if(token)store.logout(token);
+              return redirect(res,'#social=success',{'Set-Cookie':[cookie(result.token),bindingCookie('')]});
+            }catch{return redirect(res,'#social=failed',{'Set-Cookie':bindingCookie('')});}
+          }
+          throw new Problem(405,'Method not allowed.');
+        }
+        if(path===`${base}/api/social/profile`&&req.method==='POST'){
+          if(!social||!trialEnabled)throw new Problem(404,'Not found.');
+          store.limit(`social-profile:${address}`,20);return json(res,200,store.social.profile(data.proof,readCookie(req,'procip_oauth')));
+        }
+        if(path===`${base}/api/social/complete`&&req.method==='POST'){
+          if(!social||!trialEnabled)throw new Problem(404,'Not found.');
+          store.limit(`social-complete:${address}`,10,3600000);
+          const result=store.social.complete(data.proof,readCookie(req,'procip_oauth'),data.email),account=store.user(result.token);
+          if(result.created&&!account.emailVerified)sendAction(account,'verify');if(token)store.logout(token);
+          return json(res,201,{ok:true},{'Set-Cookie':[cookie(result.token),bindingCookie('')]});
+        }
+        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,trial:trialEnabled,requireVerification,recoveryAvailable:Boolean(mailer),socialProviders:social?.names()||[],connectedSignins:user?store.social.methods(user.id):[],policies:{version:POLICY_VERSION,approved:policiesApproved},serverTime:now()});
         if(path===`${base}/api/trial/info`&&req.method==='POST'){
           if(!trialEnabled)throw new Problem(404,'Not found.');
           store.limit(`trial-info:${address}`,30);return json(res,200,store.trials.info(data.invite));
@@ -138,7 +186,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         }
         throw new Problem(404,'Not found.');
       }
-      const files=new Map([[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
+      const files=new Map([[`${base}/student/google-signin.png`,['google-signin.png','image/png']],[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
       if(req.method==='GET'&&files.has(path)){const[file,type]=files.get(path);res.setHeader('Content-Type',`${type}; charset=utf-8`);return res.end(readFileSync(resolve(root,file)));}
       throw new Problem(404,'Not found.');
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e instanceof Problem?e.message:'Something went wrong. Please try again.'});else res.end();if(!(e instanceof Problem))console.error('Request failed:',e.name);}
@@ -158,7 +206,8 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
   }
   const mailer=createEmailSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,origin,base});
   const trialEnabled=process.env.FRIENDS_TRIAL_ENABLED==='true';
-  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,requireVerification:trialEnabled||process.env.STRIPE_LIVE==='true',trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true',trialEnabled});
+  const social=createIdentityProvider(providerSettings());
+  const server=createApp({social,store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,requireVerification:trialEnabled||process.env.STRIPE_LIVE==='true',trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true',trialEnabled});
   if(process.env.OWNER_ALERTS_TO){
     if(!trialEnabled)throw new Error('Owner trial alerts require the isolated friends-trial service.');
     const send=createOwnerAlertSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,to:process.env.OWNER_ALERTS_TO});

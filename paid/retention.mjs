@@ -34,6 +34,7 @@ export function maintainRetention(store,{apply=false}={}){
      db.prepare('DELETE FROM attempts WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM question_reviews WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM owner_alerts WHERE user_id=?').run(user.id);
+     db.prepare('DELETE FROM social_identities WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM email_actions WHERE user_id=?').run(user.id);
      // Keep only minimal contact/purchase evidence while financial retention remains.
@@ -60,7 +61,7 @@ export function maintainRetention(store,{apply=false}={}){
    }
   }
   if(apply){
-   for(const table of ['sessions','email_actions','rate_limits'])db.prepare(`DELETE FROM ${table} WHERE expires<=?`).run(now);
+   for(const table of ['sessions','email_actions','rate_limits','social_states','social_profiles'])db.prepare(`DELETE FROM ${table} WHERE expires<=?`).run(now);
    db.exec('COMMIT');
   }
   return result;

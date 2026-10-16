@@ -5,6 +5,7 @@ import { createAttempt, finishAttempt, grade } from '../dist/core.mjs';
 import {createLearning} from './learning.mjs';
 import {createTrials} from './trials.mjs';
 import {createOwnerAlerts} from './owner-alerts.mjs';
+import {createSocialStore} from './social.mjs';
 const scrypt = promisify(scryptCallback);
 export const ACCESS_MS = 90 * 24 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -31,6 +32,9 @@ export class Store {
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='retired'))this.db.exec('ALTER TABLE users ADD COLUMN retired INTEGER NOT NULL DEFAULT 0');
     this.trials=createTrials(this,Problem);
+    if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='password_enabled'))this.db.exec('ALTER TABLE users ADD COLUMN password_enabled INTEGER NOT NULL DEFAULT 1');
+    if(!this.db.prepare('PRAGMA table_info(sessions)').all().some(c=>c.name==='authenticated'))this.db.exec('ALTER TABLE sessions ADD COLUMN authenticated INTEGER NOT NULL DEFAULT 0');
+    this.social=createSocialStore(this,Problem);
     this.ownerAlerts=createOwnerAlerts(this);
     this.learning=createLearning(this,Problem);
   }
@@ -50,17 +54,17 @@ export class Store {
     const user = this.db.prepare('SELECT * FROM users WHERE email=? AND retired=0').get(String(email).trim().toLowerCase());
     const [salt, stored] = (user?.password || `${'0'.repeat(32)}:${'0'.repeat(128)}`).split(':');
     const key = await scrypt(password, salt, 64, { N: 32768, maxmem: 64 * 1024 * 1024 });
-    if (!timingSafeEqual(key,Buffer.from(stored,'hex')) || !user) throw new Problem(401, 'Email or password is incorrect.');
+    if (!timingSafeEqual(key,Buffer.from(stored,'hex')) || !user || !user.password_enabled) throw new Problem(401, 'Email or password is incorrect.');
     return this.newSession(user.id);
   }
   newSession(id) {
     if(!this.db.prepare('SELECT 1 FROM users WHERE id=? AND retired=0').get(id))throw new Problem(401,'Please create or sign in to an active account.');
     const token = randomBytes(32).toString('base64url');
     this.db.prepare('DELETE FROM sessions WHERE expires<=?').run(this.now());
-    this.db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(hash(token),id,this.now()+7*86400000);
+    this.db.prepare('INSERT INTO sessions(token,user_id,expires,authenticated) VALUES(?,?,?,?)').run(hash(token),id,this.now()+7*86400000,this.now());
     return token;
   }
-  user(token='') { const user=this.db.prepare('SELECT u.id,u.email,u.email_verified FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND u.retired=0').get(hash(token),this.now());return user?{id:user.id,email:user.email,emailVerified:Boolean(user.email_verified)}:undefined; }
+  user(token='') { const user=this.db.prepare('SELECT u.id,u.email,u.email_verified,s.authenticated FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND u.retired=0').get(hash(token),this.now());return user?{id:user.id,email:user.email,emailVerified:Boolean(user.email_verified),authenticatedAt:user.authenticated}:undefined; }
   logout(token) { this.db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token)); }
   limit(key,max,window=60000){
     const digest=hash(key),time=this.now();
@@ -96,7 +100,7 @@ export class Store {
     this.db.exec('BEGIN IMMEDIATE');
     try{
       const id=this.emailAction(token,'reset');
-      this.db.prepare('UPDATE users SET password=? WHERE id=?').run(`${salt}:${key.toString('hex')}`,id);
+      this.db.prepare('UPDATE users SET password=?,password_enabled=1 WHERE id=?').run(`${salt}:${key.toString('hex')}`,id);
       this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(id);
       this.db.prepare('DELETE FROM email_actions WHERE user_id=? AND purpose=?').run(id,'reset');
       this.db.exec('COMMIT');
@@ -138,6 +142,7 @@ export class Store {
       reviewSchedule:this.db.prepare('SELECT question_id,last_correct,last_seen,next_due,streak,exposures FROM question_reviews WHERE user_id=?').all(userId),
       freeTrial:this.db.prepare('SELECT created,expires,version,terms,revoked FROM trial_access WHERE user_id=?').get(userId)||null,
       operationalAlerts:this.db.prepare('SELECT kind,occurred,status,sent FROM owner_alerts WHERE user_id=? ORDER BY occurred').all(userId),
+      connectedSignins:this.social.methods(userId),
       policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
       checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
   }

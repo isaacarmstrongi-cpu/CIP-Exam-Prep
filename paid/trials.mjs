@@ -21,16 +21,22 @@ export function createTrials(store,Problem){
    return {token,id,expires,maxUses};
   },
   info(token){const row=invite(token);if(used(row.id)>=row.max_uses)throw new Problem(400,'This invitation is invalid, full, or expired. Contact support.');return {days:TRIAL_DAYS,version:TRIAL_VERSION,terms:TRIAL_TERMS,expires:row.expires};},
+  reference(token){this.info(token);return invite(token).id;},
   activate(userId,token,{accepted=false,version}={}){
+   return this.activateReference(userId,invite(token).id,{accepted,version});
+  },
+  activateReference(userId,inviteId,{accepted=false,version}={}){
    if(accepted!==true||version!==TRIAL_VERSION)throw new Problem(400,'Read and agree to the free-trial terms before continuing.');
-   db.exec('BEGIN IMMEDIATE');
+   const own=!db.isTransaction;if(own)db.exec('BEGIN IMMEDIATE');
    try{
-    const row=invite(token),old=db.prepare('SELECT * FROM trial_access WHERE user_id=?').get(userId);
-    if(old){if(old.invite_id!==row.id)throw new Problem(409,'This account has already used a free trial.');db.exec('COMMIT');return this.access(userId);}
+    const row=db.prepare('SELECT * FROM trial_invites WHERE id=? AND expires>? AND revoked=0').get(inviteId,store.now());
+    if(!row)throw new Problem(400,'This invitation is invalid, full, or expired. Contact support.');
+    const old=db.prepare('SELECT * FROM trial_access WHERE user_id=?').get(userId);
+    if(old){if(old.invite_id!==row.id)throw new Problem(409,'This account has already used a free trial.');if(own)db.exec('COMMIT');return this.access(userId);}
     if(used(row.id)>=row.max_uses)throw new Problem(400,'This invitation is invalid, full, or expired. Contact support.');
     const created=store.now();db.prepare('INSERT INTO trial_access(user_id,invite_id,created,expires,version,terms) VALUES(?,?,?,?,?,?)').run(userId,row.id,created,created+TRIAL_DAYS*DAY,TRIAL_VERSION,TRIAL_TERMS);
-    db.exec('COMMIT');return this.access(userId);
-   }catch(e){db.exec('ROLLBACK');throw e;}
+    if(own)db.exec('COMMIT');return this.access(userId);
+   }catch(e){if(own)db.exec('ROLLBACK');throw e;}
   },
   access(userId){const row=db.prepare('SELECT a.*,i.revoked AS invite_revoked FROM trial_access a JOIN trial_invites i ON i.id=a.invite_id WHERE a.user_id=?').get(userId);return {active:Boolean(row&&!row.revoked&&!row.invite_revoked&&row.expires>store.now()),expires:row?.expires??null,kind:'trial'};},
   revoke(id){db.prepare('UPDATE trial_invites SET revoked=1 WHERE id=?').run(id);}
