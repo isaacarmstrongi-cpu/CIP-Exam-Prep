@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import Stripe from 'stripe';
 import { Store,ACCESS_MS } from '../paid/store.mjs';
 import { createApp } from '../paid/server.mjs';
+import {POLICY_VERSION} from '../paid/policies.mjs';
 const bank=JSON.parse(readFileSync(new URL('../dist/data/questions.json',import.meta.url)));
 const origin='https://example.test',secret='whsec_test_only';
 async function fixture(t){let clock=1800000000000;const s=new Store(':memory:',bank,()=>clock);t.after(()=>s.db.close());const token=await s.register('student@example.test','A unique test password 123!');const user=s.user(token);return {s,token,user,get time(){return clock;},advance:n=>clock+=n};}
@@ -37,7 +38,7 @@ test('checkout uses the current card-only API contract and reuses open checkout'
  const stripe={checkout:{sessions:{create:async params=>{captured=params;calls++;return {id:'cs_contract',url:'https://checkout.stripe.com/example',expires_at:Math.floor(Date.now()/1000)+3600};}}}};
  const server=createApp({store:f.s,origin,stripe,price:'price_contract',webhookSecret:secret,enrollment:true,secure:false});await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
  const url=`http://127.0.0.1:${server.address().port}/mcip/api/checkout`;
- const options={method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:`procip_session=${f.token}`},body:'{}'};
+ const options={method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:`procip_session=${f.token}`},body:JSON.stringify({accepted:true,policyVersion:POLICY_VERSION})};
  assert.equal((await fetch(url,options)).status,200);
  assert.deepEqual(captured.allowed_payment_method_types,['card']);assert.deepEqual(captured.wallet_options,{link:{display:'never'}});assert.equal(Object.hasOwn(captured,'payment_method_types'),false);
  assert.equal(captured.mode,'payment');assert.deepEqual(captured.line_items,[{price:'price_contract',quantity:1}]);
@@ -55,7 +56,7 @@ test('sandbox checkout uses its own base path while public registration stays cl
  const state=await (await fetch(`${base}/api/session`,{headers})).json();
  assert.equal(state.enrollment,true);assert.equal(state.registrationOpen,false);assert.equal(state.sandbox,true);
  assert.equal((await fetch(`${base}/api/register`,{method:'POST',headers,body:'{}'})).status,503);
- assert.equal((await fetch(`${base}/api/checkout`,{method:'POST',headers,body:'{}'})).status,200);
+ assert.equal((await fetch(`${base}/api/checkout`,{method:'POST',headers,body:JSON.stringify({accepted:true,policyVersion:POLICY_VERSION})})).status,200);
  assert.equal(captured.success_url,`${origin}/mcip-sandbox/student/?payment=complete`);
  const login=await fetch(`${base}/api/login`,{method:'POST',headers,body:JSON.stringify({email:'student@example.test',password:'A unique test password 123!'})});
  assert.match(login.headers.get('set-cookie'),/Path=\/mcip-sandbox; HttpOnly; SameSite=Strict; Max-Age=604800; Secure/);

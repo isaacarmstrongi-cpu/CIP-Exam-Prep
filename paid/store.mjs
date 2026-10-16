@@ -19,6 +19,9 @@ export class Store {
       CREATE TABLE IF NOT EXISTS checkouts(user_id TEXT NOT NULL REFERENCES users(id),checkout_id TEXT PRIMARY KEY,url TEXT NOT NULL,expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS email_actions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),purpose TEXT NOT NULL,expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,expires INTEGER NOT NULL,count INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS policy_documents(version TEXT PRIMARY KEY,digest TEXT NOT NULL,document TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS policy_acceptances(user_id TEXT NOT NULL REFERENCES users(id),version TEXT NOT NULL REFERENCES policy_documents(version),accepted INTEGER NOT NULL,PRIMARY KEY(user_id,version));
+      CREATE TABLE IF NOT EXISTS checkout_agreements(checkout_id TEXT PRIMARY KEY REFERENCES checkouts(checkout_id),user_id TEXT NOT NULL REFERENCES users(id),version TEXT NOT NULL REFERENCES policy_documents(version),accepted INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS attempts_owner ON attempts(user_id);
       CREATE INDEX IF NOT EXISTS purchases_owner ON purchases(user_id);
     `);
@@ -95,8 +98,39 @@ export class Store {
     const row = this.db.prepare('SELECT MAX(expires) AS expires FROM purchases WHERE user_id=? AND revoked=0').get(id);
     return {active: (row.expires ?? 0) > this.now(),expires:row.expires ?? null};
   }
+  acceptPolicies(userId,{version,digest,document}){
+    this.db.exec('BEGIN IMMEDIATE');
+    try{
+      const old=this.db.prepare('SELECT digest,document FROM policy_documents WHERE version=?').get(version);
+      if(old&&(old.digest!==digest||old.document!==document))throw new Error('Policy content changed without a new version.');
+      this.db.prepare('INSERT OR IGNORE INTO policy_documents VALUES(?,?,?)').run(version,digest,document);
+      this.db.prepare('INSERT OR IGNORE INTO policy_acceptances VALUES(?,?,?)').run(userId,version,this.now());
+      this.db.exec('COMMIT');
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
+  rememberCheckout(userId,session,version){
+    this.db.exec('BEGIN IMMEDIATE');
+    try{
+      if(!this.db.prepare('SELECT 1 FROM policy_acceptances WHERE user_id=? AND version=?').get(userId,version))throw new Problem(400,'Read and agree to the current student terms before checkout.');
+      this.db.prepare('INSERT OR IGNORE INTO checkouts VALUES(?,?,?,?)').run(userId,session.id,session.url,session.expires_at*1000);
+      const owner=this.db.prepare('SELECT user_id FROM checkouts WHERE checkout_id=?').get(session.id);
+      if(owner?.user_id!==userId)throw new Problem(400,'Checkout does not belong to this account.');
+      const receipt=this.db.prepare('SELECT user_id,version FROM checkout_agreements WHERE checkout_id=?').get(session.id);
+      if(receipt&&(receipt.user_id!==userId||receipt.version!==version))throw new Problem(400,'Checkout agreement does not match this purchase.');
+      this.db.prepare('INSERT OR IGNORE INTO checkout_agreements VALUES(?,?,?,?)').run(session.id,userId,version,this.now());
+      this.db.exec('COMMIT');
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
+  accountExport(userId){
+    const account=this.db.prepare('SELECT email,created,email_verified FROM users WHERE id=?').get(userId);
+    if(!account)throw new Problem(404,'Account not found.');
+    return {exportedAt:this.now(),account,purchases:this.db.prepare('SELECT id,created,expires,revoked FROM purchases WHERE user_id=? ORDER BY created').all(userId),
+      attempts:this.db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).map(row=>JSON.parse(row.body)),
+      policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
+      checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
+  }
   requireAccess(id) { if (!this.access(id).active) throw new Problem(403,'An active practice package is required.'); }
-  rememberPayment(event, session, expectedPrice, live) {
+  rememberPayment(event, session, expectedPrice, live, policyVersion=null) {
     if (event.livemode !== live || session.livemode !== live) throw new Problem(400,'Payment environment does not match.');
     const items = session.line_items?.data;
     if (session.mode !== 'payment' || session.payment_status !== 'paid' || session.currency !== 'usd' ||
@@ -105,6 +139,7 @@ export class Store {
     const userId = session.client_reference_id;
     const checkout = this.db.prepare('SELECT * FROM checkouts WHERE checkout_id=? AND user_id=?').get(session.id,userId);
     if (!checkout) throw new Problem(400,'Payment is not associated with a student checkout.');
+    if(policyVersion&&!this.db.prepare('SELECT 1 FROM checkout_agreements WHERE checkout_id=? AND user_id=? AND version=?').get(session.id,userId,policyVersion))throw new Problem(400,'Payment is missing the required student agreement.');
     this.db.exec('BEGIN IMMEDIATE');
     try {
       if (!this.db.prepare('SELECT id FROM events WHERE id=?').get(event.id)) {

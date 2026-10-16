@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { isIP } from 'node:net';
 import { Store, Problem } from './store.mjs';
 import { createEmailSender } from './email.mjs';
+import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage} from './policies.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
 export function clientAddress(req,trustProxy=false){
   const peer=req.socket.remoteAddress;
@@ -16,9 +17,9 @@ export function clientAddress(req,trustProxy=false){
   }
   return peer;
 }
-export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false}) {
+export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false,policiesApproved=!live,launchApproved=!live}) {
   const checkoutLocks=new Set();
-  const ready=()=>Boolean(enrollment&&stripe&&price&&webhookSecret&&(!requireVerification||mailer));
+  const ready=()=>Boolean(enrollment&&stripe&&price&&webhookSecret&&policiesApproved&&launchApproved&&(!requireVerification||mailer));
   const sendAction=(user,purpose)=>{const token=store.issueEmailAction(user.id,purpose);Promise.resolve().then(()=>mailer({to:user.email,purpose,token})).catch(()=>console.error('Account email delivery failed; resend is available.'));};
   const json=(res,status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));};
   const cookie=token=>`procip_session=${token}; Path=${base||'/'}; HttpOnly; SameSite=Strict; Max-Age=${token?604800:0}${secure?'; Secure':''}`;
@@ -30,6 +31,8 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     try {
       const url=new URL(req.url,origin),path=url.pathname;
+      const policyRoute=path.match(new RegExp(`^${base}/policies/(terms|privacy|refunds)$`));
+      if(policyRoute&&req.method==='GET'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(policyPage(policyRoute[1],{base,approved:policiesApproved}));}
       if(path===`${base}/api/stripe/webhook`&&req.method==='POST') {
         if(!stripe||!webhookSecret)throw new Problem(503,'Payments are not configured.');
         const raw=await body(req);let event;
@@ -37,7 +40,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         if(event.livemode!==live)throw new Problem(400,'Payment environment does not match.');
         if(event.type==='checkout.session.completed'){
           const session=await stripe.checkout.sessions.retrieve(event.data.object.id,{expand:['line_items']});
-          store.rememberPayment(event,session,price,live);
+          store.rememberPayment(event,session,price,live,policiesApproved?POLICY_VERSION:null);
         } else if(event.type==='charge.refunded'){
           // Retrieve the current charge so out-of-order events cannot undo a refund.
           const charge=await stripe.charges.retrieve(event.data.object.id);
@@ -57,7 +60,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         let data={};if(req.method!=='GET'){try{data=JSON.parse((await body(req)).toString());}catch(e){if(e instanceof Problem)throw e;throw new Problem(400,'Invalid request.');}if(!data||typeof data!=='object'||Array.isArray(data))throw new Problem(400,'Invalid request.');}
         const token=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('procip_session='))?.slice(15)||'';
         const user=store.user(token);
-        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,requireVerification,recoveryAvailable:Boolean(mailer),serverTime:now()});
+        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,requireVerification,recoveryAvailable:Boolean(mailer),policies:{version:POLICY_VERSION,approved:policiesApproved},serverTime:now()});
         if(path===`${base}/api/verify-email`&&req.method==='POST'){store.verifyEmail(data.token);return json(res,200,{ok:true});}
         if(path===`${base}/api/reset-password`&&req.method==='POST'){store.limit(`reset:${address}`,10);await store.resetPassword(data.token,data.password);return json(res,200,{ok:true},{'Set-Cookie':cookie('')});}
         if(path===`${base}/api/forgot-password`&&req.method==='POST'){
@@ -75,6 +78,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
           return json(res,200,{ok:true},{'Set-Cookie':cookie(newToken)});
         }
         if(!user)throw new Problem(401,'Please sign in.');
+        if(path===`${base}/api/account-data`&&req.method==='GET'){res.setHeader('Content-Disposition','attachment; filename="pro-cip-account-data.json"');return json(res,200,store.accountExport(user.id));}
         if(path===`${base}/api/logout`&&req.method==='POST'){store.logout(token);return json(res,200,{ok:true},{'Set-Cookie':cookie('')});}
         if(path===`${base}/api/resend-verification`&&req.method==='POST'){
           if(!mailer)throw new Problem(503,'Email delivery is not available yet.');
@@ -85,13 +89,15 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         if(path===`${base}/api/checkout`&&req.method==='POST'){
           if(!ready())throw new Problem(503,'Enrollment is not open yet.');
           if(store.access(user.id).active)throw new Problem(409,'Your package is already active.');
+          if(data.accepted!==true||data.policyVersion!==POLICY_VERSION)throw new Problem(400,'Read and agree to the current student terms before checkout.');
           if(checkoutLocks.has(user.id))throw new Problem(409,'Checkout is being prepared. Please try again.');
           checkoutLocks.add(user.id);
           try{
-            const old=store.db.prepare('SELECT * FROM checkouts WHERE user_id=? ORDER BY expires DESC LIMIT 1').get(user.id);
+            store.acceptPolicies(user.id,{version:POLICY_VERSION,digest:POLICY_DIGEST,document:policySnapshot});
+            const old=store.db.prepare('SELECT c.* FROM checkouts c JOIN checkout_agreements a ON c.checkout_id=a.checkout_id WHERE c.user_id=? AND a.user_id=? AND a.version=? ORDER BY c.expires DESC LIMIT 1').get(user.id,user.id,POLICY_VERSION);
             if(old&&old.expires>now())return json(res,200,{url:old.url});
-            const session=await stripe.checkout.sessions.create({mode:'payment',allowed_payment_method_types:['card'],wallet_options:{link:{display:'never'}},line_items:[{price,quantity:1}],client_reference_id:user.id,customer_email:user.email,success_url:`${origin}${base}/student/?payment=complete`,cancel_url:`${origin}${base}/student/?payment=cancelled`,expires_at:Math.floor(now()/1000)+3600},{idempotencyKey:`procip-${user.id}-${Math.floor(now()/1800000)}`});
-            store.db.prepare('INSERT OR IGNORE INTO checkouts VALUES(?,?,?,?)').run(user.id,session.id,session.url,session.expires_at*1000);
+            const session=await stripe.checkout.sessions.create({mode:'payment',allowed_payment_method_types:['card'],wallet_options:{link:{display:'never'}},line_items:[{price,quantity:1}],client_reference_id:user.id,customer_email:user.email,metadata:{policy_version:POLICY_VERSION,policy_digest:POLICY_DIGEST},success_url:`${origin}${base}/student/?payment=complete`,cancel_url:`${origin}${base}/student/?payment=cancelled`,expires_at:Math.floor(now()/1000)+3600},{idempotencyKey:`procip-${POLICY_VERSION}-${user.id}-${Math.floor(now()/1800000)}`});
+            store.rememberCheckout(user.id,session,POLICY_VERSION);
             return json(res,200,{url:session.url});
           }finally{checkoutLocks.delete(user.id);}
         }
@@ -124,7 +130,7 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
     try{const token=await store.register(process.env.SANDBOX_SEED_EMAIL,process.env.SANDBOX_SEED_PASSWORD);store.logout(token);}catch(e){if(!(e instanceof Problem)||e.status!==409)throw e;}
   }
   const mailer=createEmailSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,origin,base});
-  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,trustProxy:process.env.TRUST_PROXY==='loopback'});
+  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true'});
   server.listen(Number(process.env.PORT||4190),'127.0.0.1',()=>console.log('Student portal listening on the loopback interface. Enrollment is '+(process.env.ENROLLMENT_OPEN==='true'?'configured open':'closed')+'.'));
 }
 

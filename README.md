@@ -8,6 +8,8 @@ The `paid/` service runs on the existing Hostinger VPS with Node.js 24, SQLite, 
 
 The portal stores accounts and attempts on the server, verifies email ownership, supports single-use password recovery, and invalidates sessions after a password reset. Its server controls exam deadlines and grading and withholds answer keys until submission. Signed payment events grant access once; full refunds and disputes revoke it. Request limits survive service restarts. A backup tool creates checked snapshots and verifies restoration in isolation.
 
+Student terms, refunds and privacy pages are available for owner review. Checkout requires the current policy agreement and preserves the exact document plus a dated purchase receipt. Learners can download their own account records. Policy approval and final launch approval are separate server gates; both remain off while launch requirements are unresolved. Private repository updates can use the credential-free-on-server upload workflow in `ops/PRIVATE-DEPLOYMENT.md`.
+
 Run `npm ci`, then configure the protected settings documented in `paid/OPERATIONS.md` before starting `node paid/server.mjs`. Never put credentials in Git or serve the repository root or `dist/` as the paid portal. The repository has previously been public, including question-bank history; private hosting alone cannot retract prior copies.
 
 `npm test` covers both applications. Deployment checks have also included a real Stripe sandbox purchase and server-side backup restoration. Those results do not establish tax readiness, legal-policy approval, real email delivery or permission to open enrollment.

@@ -21,6 +21,8 @@ Keep configuration in a root-owned file with mode 0600, outside the repository a
 | `TRUST_PROXY` | `loopback` only behind the configured local Apache proxy |
 | `ENROLLMENT_OPEN` | Keep `false` until launch requirements are satisfied |
 | `REGISTRATION_OPEN` | Set `false` to disable new accounts independently |
+| `POLICIES_APPROVED` | Only `true` after final policy content and operations receive owner approval; otherwise pages are marked as drafts |
+| `LAUNCH_APPROVED` | Separate final launch gate; keep `false` while tax and other launch work is deferred |
 
 The live service requires configured email delivery before enrollment can open. Unverified students cannot buy a package or access exam APIs. Reset links expire after 30 minutes, verification links after 24 hours; both are single-use. Resetting a password invalidates all existing sessions. Links use a URL fragment and are removed from the address bar after loading.
 
@@ -57,3 +59,13 @@ Do not use real cards for integration tests. Use Stripe's documented sandbox car
 - Confirm the public landing page's enrollment status matches the server.
 
 Account recovery and sending credentials being configured does not establish global tax readiness. Stripe Tax calculates only where an applicable active registration is configured; resolve registrations and the product tax category before global enrollment.
+
+## Student policies and privacy operations
+
+The terms, refunds and privacy pages are served under `/mcip/policies/`. All are visibly marked as owner-review drafts until `POLICIES_APPROVED=true`. Do not approve the current proposed privacy text until the outstanding seller details and retention/transfer review are resolved. Tax setup is explicitly deferred by the owner; keep `LAUNCH_APPROVED=false` and enrollment closed.
+
+Checkout requires an affirmative checkbox and the current policy version. The server archives the exact policy content and digest, records the learner and agreement time, and binds a separate dated agreement receipt to the checkout. A stale, missing or string-valued acceptance is rejected. Never edit an accepted version in place: revise the content and increment `POLICY_VERSION` together. Agreement records must be included in private database backups.
+
+Signed-in learners can download their own account, attempt, purchase and policy-agreement records. The download excludes password/session/recovery hashes, server credentials and other learners. Export remains available after paid access expires. Correction, deletion and other requests are handled through support; no automated deletion or claimed retention schedule has been enabled.
+
+For private-repository updates, follow `ops/PRIVATE-DEPLOYMENT.md`. The upload workflow uses the owner's existing SSH access and requires no GitHub token on the VPS. Repository visibility changes do not retrieve old public copies.
