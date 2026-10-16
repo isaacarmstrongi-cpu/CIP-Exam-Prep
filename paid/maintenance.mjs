@@ -1,5 +1,5 @@
 import {readFileSync,readdirSync,lstatSync,unlinkSync,realpathSync,existsSync,chownSync,chmodSync} from 'node:fs';
-import {join,resolve} from 'node:path';
+import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {snapshot,verifyRestore} from './backup.mjs';
@@ -41,7 +41,7 @@ export async function maintainDatabase(source,directory,{apply=false,now=Date.no
  const removedSnapshots=apply?await pruneSnapshots(directory,now()):0;
  return {...result,removedSnapshots};
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.url)){
  const apply=process.env.RETENTION_ENABLED==='true';
  console.log('Retention maintenance:',JSON.stringify(await maintainDatabase(process.env.DATABASE_PATH,process.env.BACKUP_DIRECTORY,{apply})));
 }

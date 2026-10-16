@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,mkdtempSync,rmSync,readdirSync,writeFileSync} from 'node:fs';
+import {readFileSync,mkdtempSync,rmSync,readdirSync,writeFileSync,symlinkSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Store} from '../paid/store.mjs';
@@ -40,4 +42,15 @@ test('backup rotation removes only old checked snapshots and preserves newest tw
  const sentinel=join(backups,'unrelated.txt');writeFileSync(sentinel,'keep');
  const future=Date.now()+31*DAY;assert.equal(await pruneSnapshots(backups,future),1);assert.equal(readdirSync(backups).filter(n=>n.endsWith('.sqlite')).length,2);assert.ok(readdirSync(backups).includes('unrelated.txt'));
  assert.equal(await pruneSnapshots(backups,future),0);
+});
+
+test('scheduled maintenance executes through the production-style current-release symlink',async t=>{
+ const root=mkdtempSync(join(tmpdir(),'procip-maintenance-cli-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const source=join(root,'db.sqlite'),backups=join(root,'backups'),store=new Store(source,bank,()=>Date.now()-31*DAY);
+ await store.register('expired@example.test',password);store.db.close();
+ const alias=join(root,'current');symlinkSync(fileURLToPath(new URL('../paid',import.meta.url)),alias,process.platform==='win32'?'junction':'dir');
+ const output=execFileSync(process.execPath,[join(alias,'maintenance.mjs')],{env:{...process.env,DATABASE_PATH:source,BACKUP_DIRECTORY:backups,RETENTION_ENABLED:'true'},encoding:'utf8'});
+ assert.match(output,/"apply":true/);assert.match(output,/"deletedAccounts":1/);
+ const reopened=new Store(source,bank);try{assert.equal(reopened.db.prepare('SELECT count(*) AS n FROM users').get().n,0);}finally{reopened.db.close();}
+ assert.equal(readdirSync(backups).filter(name=>name.endsWith('.sqlite')).length,1);
 });
