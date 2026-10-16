@@ -23,8 +23,8 @@ test('notes require sign-in, verification and active access; timed exams block n
  assert.equal((await fetch(url)).status,401);assert.equal((await fetch(url,{headers})).status,403);f.pay();
  f.s.db.prepare('UPDATE users SET email_verified=0 WHERE id=?').run(f.u.id);assert.equal((await fetch(url,{headers})).status,403);f.s.db.prepare('UPDATE users SET email_verified=1 WHERE id=?').run(f.u.id);
  const list=await (await fetch(url,{headers})).json();assert.equal(list.lessons.length,30);
- const note=await (await fetch(url+'?objective=4.v',{headers})).json();assert.equal(note.lesson.id,'holds-and-discovery');assert.ok(!JSON.stringify(note).includes('correctIndex'));
- assert.equal((await fetch(url+'?id=missing',{headers})).status,404);assert.equal((await fetch(base+'/student/study-content.mjs')).status,404);
+ const note=await (await fetch(url+'?objective=4.v',{headers})).json();assert.equal(note.lesson.id,'holds-and-discovery');assert.ok(!JSON.stringify(note).includes('correctIndex'));assert.equal(note.lesson.advanced.checks.length,2);
+ assert.equal((await fetch(url+'?id=missing',{headers})).status,404);assert.equal((await fetch(base+'/student/study-content.mjs')).status,404);assert.equal((await fetch(base+'/student/study-depth.mjs')).status,404);assert.equal((await fetch(base+'/student/lesson-audio.mjs')).status,200);
  const a=f.s.start(f.u.id,4);assert.equal((await fetch(url,{headers})).status,409);f.advance(120*60000);assert.equal((await fetch(url,{headers})).status,200);assert.equal(f.s.attempt(f.u.id,a.id).status,'submitted');
  const view=f.s.view(f.u.id,a.id);assert.match(results(view),/data-note-objective="/);f.advance(91*86400000);const login=await f.s.login('notes@example.test','A private fixture password 123!');assert.equal((await fetch(url,{headers:{Cookie:'procip_session='+login}})).status,403);
 });

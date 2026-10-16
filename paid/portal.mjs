@@ -1,3 +1,4 @@
+import {mountLessonAudio} from './lesson-audio.mjs';
 import {dashboard,exam,results,practiceSetup} from './ui.mjs';
 import {libraryPage,lessonPage} from './study-ui.mjs';
 import {planPage,cardLibrary,cardPage} from './tools-ui.mjs';
@@ -18,9 +19,10 @@ async function openLibrary(domain='',query=''){
  requireSaved();const data=await api('study-notes');notesIndex=data.lessons;clearInterval(timer);
  app.innerHTML=libraryPage(notesIndex,{domain,query,hasSession:Boolean(view)});app.querySelector('h1')?.focus();window.scrollTo(0,0);
 }
+let disposeLessonAudio=()=>{};
 async function openNote(query){
  requireSaved();const data=await api('study-notes?'+new URLSearchParams(query));clearInterval(timer);
- app.innerHTML=lessonPage(data.lesson,data.sources,{hasSession:Boolean(view)})+(cardState?.cards[cardPosition]?'<button class="secondary" data-card-resume>Back to flashcard</button>':'');app.querySelector('h1')?.focus();window.scrollTo(0,0);
+ disposeLessonAudio();app.innerHTML=lessonPage(data.lesson,data.sources,{hasSession:Boolean(view)})+(cardState?.cards[cardPosition]?'<button class="secondary" data-card-resume>Back to flashcard</button>':'');disposeLessonAudio=mountLessonAudio(app,data.lesson);app.querySelector('h1')?.focus();window.scrollTo(0,0);
 }
 function socialOptions(purpose){
  const providers=(session.socialProviders||[]).filter(p=>purpose!=='link'||!session.connectedSignins.some(m=>m.provider===p.id));if(!providers.length)return '';

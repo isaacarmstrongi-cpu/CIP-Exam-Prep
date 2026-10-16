@@ -1,6 +1,8 @@
 // Original teaching text. Objective identifiers are alignment tags, not copied lessons.
-export const STUDY_VERSION='2026-10-16-v1';
+import {depth} from './study-depth.mjs';
+export const STUDY_VERSION='2026-10-16-v2';
 export const sources={
+ privacy:{title:'NIST: Privacy Framework',url:'https://www.nist.gov/privacy-framework'},
  blueprint:{title:'AIIM: current CIP exam outline and version information',url:'https://www.aiim.org/education-section/cip'},
  preservation:{title:'National Archives: digital preservation resources',url:'https://www.archives.gov/preservation/digital-preservation'},
  records:{title:'National Archives: records management guidance (U.S. federal context)',url:'https://www.archives.gov/records-mgmt/policy'},
@@ -10,7 +12,7 @@ export const sources={
  ai:{title:'NIST: AI Risk Management Framework',url:'https://www.nist.gov/itl/ai-risk-management-framework'},
  accessibility:{title:'W3C: Web Content Accessibility Guidelines',url:'https://www.w3.org/TR/WCAG22/'}
 };
-const note=(id,domain,letters,title,essentials,sections,steps,example,traps,question,answer,refs=[])=>({id,domain,objectives:letters.split('').map(c=>`${domain}.${c}`),title,essentials,sections,steps,example,traps,question,answer,sources:refs,version:STUDY_VERSION});
+const note=(id,domain,letters,title,essentials,sections,steps,example,traps,question,answer,refs=[])=>({id,domain,objectives:letters.split('').map(c=>`${domain}.${c}`),title,essentials,sections,steps,example,traps,question,answer,advanced:depth[id],sources:[...refs,...(id==='privacy-by-design'?['privacy']:[])],version:STUDY_VERSION});
 export const lessons=[
 note('capture-at-source',1,'cdf','Capture at the point of work',[
  'Choose the capture point from the business event and evidence needed, before choosing a scanner.',

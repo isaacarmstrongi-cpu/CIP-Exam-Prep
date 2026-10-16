@@ -202,7 +202,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         }
         throw new Problem(404,'Not found.');
       }
-      const files=new Map([[`${base}/student/google-signin.png`,['google-signin.png','image/png']],[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/study-ui.mjs`,['study-ui.mjs','text/javascript']],[`${base}/student/tools-ui.mjs`,['tools-ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
+      const files=new Map([[`${base}/student/google-signin.png`,['google-signin.png','image/png']],[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/lesson-audio.mjs`,['lesson-audio.mjs','text/javascript']],[`${base}/student/study-ui.mjs`,['study-ui.mjs','text/javascript']],[`${base}/student/tools-ui.mjs`,['tools-ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
       if(req.method==='GET'&&files.has(path)){const[file,type]=files.get(path);res.setHeader('Content-Type',`${type}; charset=utf-8`);return res.end(readFileSync(resolve(root,file)));}
       throw new Problem(404,'Not found.');
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e instanceof Problem?e.message:'Something went wrong. Please try again.'});else res.end();if(!(e instanceof Problem))console.error('Request failed:',e.name);}
