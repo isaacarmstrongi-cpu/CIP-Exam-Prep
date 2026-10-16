@@ -1,4 +1,4 @@
-import {dashboard,exam,results} from './ui.mjs';
+import {dashboard,exam,results,practiceSetup} from './ui.mjs';
 import {libraryPage,lessonPage} from './study-ui.mjs';
 import {planPage,cardLibrary,cardPage} from './tools-ui.mjs';
 const app=document.querySelector('#app'),notice=document.querySelector('#notice');
@@ -68,6 +68,7 @@ app.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.clo
 if(b.hasAttribute('data-cancel-submit')||b.hasAttribute('data-cancel-start')){b.closest('dialog').close();return;}
 if(b.hasAttribute('data-trial-signin'))return home(true);
 requireSaved();
+if(b.hasAttribute('data-open-practice')){const insights=await api('insights');if(insights.active.some(a=>a.mode==='simulation'))throw new Error('Finish or submit your timed exam before opening study sessions.');clearInterval(timer);app.innerHTML=practiceSetup(insights);app.querySelector('h1')?.focus();window.scrollTo(0,0);return;}
 if(b.hasAttribute('data-plan'))return openPlan();
 if(b.hasAttribute('data-task-date')){const data=await api('study-plan','PATCH',{date:b.dataset.taskDate,done:b.dataset.taskDone==='true'});app.innerHTML=planPage(data);message('Task status saved.');return;}
 if(b.hasAttribute('data-cards'))return openCards();
