@@ -1,0 +1,39 @@
+{
+  "revision": "2026-10-16-editorial-2",
+  "questionCount": 500,
+  "revisedAnswerWording": 116,
+  "stemsKeysRationalesAndReferencesPreserved": true,
+  "method": "Editorial wording review and option-length heuristic check; ties weighted uniformly. This is not empirical item calibration or independent subject-matter certification.",
+  "metrics": [
+    {
+      "exam": 1,
+      "longestOptionExpectedBefore": 36.8,
+      "longestOptionExpectedAfter": 30,
+      "shortestOptionExpectedAfter": 34
+    },
+    {
+      "exam": 2,
+      "longestOptionExpectedBefore": 47,
+      "longestOptionExpectedAfter": 29,
+      "shortestOptionExpectedAfter": 28.5
+    },
+    {
+      "exam": 3,
+      "longestOptionExpectedBefore": 47.5,
+      "longestOptionExpectedAfter": 32,
+      "shortestOptionExpectedAfter": 32.3
+    },
+    {
+      "exam": 4,
+      "longestOptionExpectedBefore": 57.5,
+      "longestOptionExpectedAfter": 32,
+      "shortestOptionExpectedAfter": 18
+    },
+    {
+      "exam": 5,
+      "longestOptionExpectedBefore": 61.8,
+      "longestOptionExpectedAfter": 29,
+      "shortestOptionExpectedAfter": 21
+    }
+  ]
+}

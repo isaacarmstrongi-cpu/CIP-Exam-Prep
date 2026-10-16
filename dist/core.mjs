@@ -20,21 +20,22 @@ export function answerAttempt(attempt,qid,choice,now=Date.now()) {
 }
 export function finishAttempt(attempt,now=Date.now()) {
   if(attempt.status!=='active')return attempt;
+  if(attempt.mode==='study')return {...attempt,status:'submitted',submittedAt:now,reason:'manual'};
   return {...attempt,status:'submitted',submittedAt:Math.min(now,attempt.deadline),reason:now>=attempt.deadline?'time':'manual'};
 }
 export function grade(attempt,bank) {
-  const questions=bank.filter(q=>q.set===attempt.set);
+  const questions=attempt.mode==='study'?attempt.questionIds.map(id=>bank.find(q=>q.id===id)).filter(Boolean):bank.filter(q=>q.set===attempt.set);
   const outcomes=questions.map(q=>({q,selected:attempt.answers[q.id]??null,correct:attempt.answers[q.id]===q.correctIndex}));
   const correct=outcomes.filter(x=>x.correct).length;
   const answered=outcomes.filter(x=>x.selected!==null).length;
   const domains=DOMAINS.map(d=>{
-    const rows=outcomes.filter(x=>x.q.domain===d.id),n=rows.filter(x=>x.correct).length;
-    return {...d,correct:n,total:rows.length,percent:rows.length?Math.round(100*n/rows.length):0,lost:rows.length-n};
+    const rows=outcomes.filter(x=>x.q.domain===d.id),n=rows.filter(x=>x.correct).length,assessed=rows.filter(x=>x.selected!==null).length;
+    return {...d,correct:n,assessed,total:rows.length,accuracy:assessed?Math.round(100*n/assessed):null,percent:rows.length?Math.round(100*n/rows.length):0,lost:rows.length-n};
   });
   const priorities=[...domains].sort((a,b)=>b.lost-a.lost||a.percent-b.percent||a.id-b.id);
   const score=questions.length?Math.round(correct*100/questions.length):0;
   const band=score>=80&&domains.every(d=>d.percent>=75)?'Strong practice performance':score>=60?'Passing range · keep strengthening':'Build your foundation';
-  return {outcomes,correct,answered,total:questions.length,score,domains,priorities,band};
+  return {outcomes,correct,answered,total:questions.length,score,answeredAccuracy:answered?Math.round(100*correct/answered):null,domains,priorities,band};
 }
 export function validAttempt(a,bank) {
   if(!a||a.version!==BANK_VERSION||typeof a.id!=='string'||![4,5,6,7,8].includes(a.set)||!['active','submitted'].includes(a.status))return false;

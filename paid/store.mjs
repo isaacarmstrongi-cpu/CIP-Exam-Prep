@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, randomBytes, createHash, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { createAttempt, finishAttempt, grade } from '../dist/core.mjs';
+import {createLearning} from './learning.mjs';
 const scrypt = promisify(scryptCallback);
 export const ACCESS_MS = 90 * 24 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -27,6 +28,7 @@ export class Store {
     `);
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='retired'))this.db.exec('ALTER TABLE users ADD COLUMN retired INTEGER NOT NULL DEFAULT 0');
+    this.learning=createLearning(this,Problem);
   }
   async register(email, password) {
     email = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -128,6 +130,7 @@ export class Store {
     if(!account)throw new Problem(404,'Account not found.');
     return {exportedAt:this.now(),account,purchases:this.db.prepare('SELECT id,created,expires,revoked FROM purchases WHERE user_id=? ORDER BY created').all(userId),
       attempts:this.db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).map(row=>JSON.parse(row.body)),
+      reviewSchedule:this.db.prepare('SELECT question_id,last_correct,last_seen,next_due,streak,exposures FROM question_reviews WHERE user_id=?').all(userId),
       policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
       checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
   }
@@ -174,24 +177,25 @@ export class Store {
     const row = this.db.prepare('SELECT body FROM attempts WHERE id=? AND user_id=?').get(id,userId);
     if (!row) throw new Problem(404,'Attempt not found.');
     let a = JSON.parse(row.body);
-    if (a.status === 'active' && a.deadline <= this.now()) { a=finishAttempt(a,this.now()); this.saveAttempt(userId,a); }
+    if (a.status === 'active' && a.mode!=='study' && a.deadline <= this.now()) { a=finishAttempt(a,this.now()); this.learning.completed(userId,a); }
     return a;
   }
   start(userId,set) {
     this.requireAccess(userId);
     if (![4,5,6,7,8].includes(set)) throw new Problem(400,'Select an exam.');
     for (const row of this.db.prepare('SELECT id FROM attempts WHERE user_id=?').all(userId)) {
-      const a=this.attempt(userId,row.id); if(a.status==='active') return a;
+      const a=this.attempt(userId,row.id);if(a.status==='active'&&a.mode!=='study'){if(a.set!==set)throw new Problem(409,`Exam ${a.set-3} is in progress. Resume or submit it before starting another timed exam.`);return a;}
     }
     const a=createAttempt(set,this.now()); this.saveAttempt(userId,a); return a;
   }
   update(userId,id,change) {
     this.requireAccess(userId); const a=this.attempt(userId,id);
     if(a.status!=='active') throw new Problem(409,'This exam has ended. Open your results.');
-    const questions=this.bank.filter(q=>q.set===a.set);
+    const questions=this.learning.questions(a);
     if ('questionId' in change) {
       if (!questions.some(q=>q.id===change.questionId)) throw new Problem(400,'Unknown question.');
       if ('choice' in change) {
+        if(a.checked?.includes(change.questionId))throw new Problem(409,'This answer has been checked. Continue to another question.');
         if(change.choice===null) delete a.answers[change.questionId];
         else if(Number.isInteger(change.choice)&&change.choice>=0&&change.choice<4) a.answers[change.questionId]=change.choice;
         else throw new Problem(400,'Invalid answer.');
@@ -208,17 +212,18 @@ export class Store {
     this.saveAttempt(userId,a);return a;
   }
   submit(userId,id) {
-    this.requireAccess(userId); const a=finishAttempt(this.attempt(userId,id),this.now());this.saveAttempt(userId,a);return a;
+    this.requireAccess(userId);const a=finishAttempt(this.attempt(userId,id),this.now());this.learning.completed(userId,a);return a;
   }
   view(userId,id) {
     this.requireAccess(userId);const a=this.attempt(userId,id);
-    const questions=this.bank.filter(q=>q.set===a.set).map(({id,number,domain,stem,choices})=>({id,number,domain,stem,choices}));
-    return {attempt:a,serverTime:this.now(),questions,...(a.status==='submitted'?{result:grade(a,this.bank)}:{})};
+    const full=this.learning.questions(a),questions=full.map(({id,number,domain,stem,choices})=>({id,number,domain,stem,choices}));
+    const current=full[a.index],feedback=a.mode==='study'&&a.checked.includes(current.id)?{correctIndex:current.correctIndex,rationale:current.rationale,source:current.source,objective:current.objective}:null;
+    return {attempt:a,serverTime:this.now(),questions,feedback,...(a.status==='submitted'?{result:grade(a,this.bank)}:{})};
   }
   history(userId) {
     return this.db.prepare('SELECT id FROM attempts WHERE user_id=? ORDER BY rowid DESC').all(userId).map(row=>{
       const a=this.attempt(userId,row.id);const g=a.status==='submitted'?grade(a,this.bank):null;
-      return {id:a.id,set:a.set,status:a.status,startedAt:a.startedAt,score:g?.score??null};
+      return {id:a.id,set:a.set,mode:a.mode||'simulation',count:this.learning.questions(a).length,status:a.status,startedAt:a.startedAt,score:a.mode==='study'?(g?.answeredAccuracy??null):(g?.score??null)};
     });
   }
 }

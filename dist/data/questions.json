@@ -169,7 +169,7 @@
     "stem": "An engineering partnership needs a joint workspace. Each partner can share project drawings, but unrelated customer designs must remain confidential. Which initial design best balances collaboration and the boundary requirement?",
     "choices": [
       "Give partner accounts the same access as internal engineering staff",
-      "Create a scoped project workspace with explicitly authorized partner access",
+      "Create a scoped workspace with explicitly authorized partner access",
       "Exchange complete engineering libraries through encrypted transfer packages",
       "Let partners browse internal folders and request restricted files"
     ],
@@ -221,7 +221,7 @@
       "Preserve historical dates in a sidecar export while allowing the workflow to use import time",
       "Change every review rule to subtract a single average migration delay from creation",
       "Keep import time as creation and add historical dates to an unstructured migration note",
-      "Map verified original dates to creation and record import time in a distinct ingestion field"
+      "Map verified original dates to creation; retain import time in a separate ingestion field"
     ],
     "correctIndex": 3,
     "rationale": "Separate fields preserve both events and supply the existing workflow with the date it actually requires. Notes and sidecars retain evidence but do not fix workflow behavior. An average delay cannot reconstruct different historical dates accurately. Mapping should preserve meaning, rather than make import events stand in for document creation.",
@@ -273,7 +273,7 @@
     "choices": [
       "Select whichever process already has a discounted software proposal",
       "Split the funding equally before assessing either process in detail",
-      "Pilot equipment requests with measurable benefits and bounded operational risk",
+      "Pilot equipment requests with measurable benefits and bounded risk",
       "Select medication authorization because its potential consequences are greater"
     ],
     "correctIndex": 2,
@@ -352,7 +352,7 @@
       "Use a single naming convention and rely on the newest modification timestamp to select authority",
       "Copy active cases nightly and let each department correct discrepancies during its weekly review",
       "Give both teams read access everywhere while allowing each to update its own repository copy",
-      "Define authoritative ownership by case milestone and enforce the tested transfer between systems"
+      "Define ownership by case milestone and enforce the tested transfer between systems"
     ],
     "correctIndex": 3,
     "rationale": "An explicit ownership boundary and controlled transfer establish which system may hold the current record at each stage. Nightly copying permits conflicts between reconciliations. Broad read access does not govern competing writes. Names and timestamps help identify objects but cannot determine business authority when updates occur independently.",
@@ -760,7 +760,7 @@
     "choices": [
       "Discard completed work and restart every assessment from the beginning",
       "Replace the roadmap with the next vendor’s recommended product sequence",
-      "Reassess remaining projects against the new goals, dependencies, and resources",
+      "Reassess remaining work against new goals, dependencies and resources",
       "Treat the original project dates as fixed regardless of changed circumstances"
     ],
     "correctIndex": 2,
@@ -1218,7 +1218,7 @@
     "choices": [
       "Digitize the oldest files first and delay new digital capture",
       "Digitize every file before allowing the new inspection process",
-      "Digitize active-facility backfiles and use digital capture for new inspections",
+      "Digitize active-facility backfiles and capture new inspections digitally",
       "Scan historical files only when requested and postpone active-file conversion"
     ],
     "correctIndex": 2,
@@ -1698,7 +1698,7 @@
     "topic": "Third-party evidence",
     "stem": "A former contractor controls a project message account and offers to send selected screenshots in response to a dispute. Counsel needs reliable evidence of the full relevant conversation. What should the information professional recommend?",
     "choices": [
-      "Coordinate lawful collection with counsel and preserve context and provenance",
+      "Coordinate lawful collection with counsel, preserving context and provenance",
       "Ask another employee to access the account using a saved password",
       "Retype the messages into a spreadsheet to standardize the collection",
       "Accept the selected screenshots as a complete substitute for source messages"
@@ -1908,7 +1908,7 @@
       "Centralize the copies in one folder while preserving their separate update routines",
       "Ask agents to compare the three copies manually before sending each message",
       "Adopt the most recently modified file as authoritative without validating change provenance",
-      "Establish authoritative preferences and propagate controlled updates to dependent processes"
+      "Set authoritative preferences and propagate controlled changes to dependent processes"
     ],
     "correctIndex": 3,
     "rationale": "Authoritative preferences with controlled updates resolve the inconsistent inputs to messaging. Manual comparison leaves repeated interpretation and errors. A recent modification can be a technical change rather than the latest valid preference. Central storage alone does not establish authority or reconcile separate routines that continue producing conflicting copies.",
@@ -1933,7 +1933,7 @@
     "stem": "A taxonomy design group includes records specialists and software engineers. It has not tested whether proposed categories reflect how operational staff distinguish cases. Which addition most directly addresses the current design risk?",
     "choices": [
       "Additional infrastructure engineers responsible for repository availability",
-      "Representative users and subject experts from the affected business functions",
+      "Representative operational users and subject experts from affected functions",
       "An external designer instructed to reproduce the current category names",
       "A procurement specialist focused on the software supplier's contract terms"
     ],
@@ -1983,7 +1983,7 @@
     "choices": [
       "The preferred vendor interface selected by the largest division",
       "The total storage capacity without examining work or culture",
-      "The differing behaviors, decision practices, and reasons behind them",
+      "Their different behaviors, decision practices and underlying reasons",
       "A single average maturity score that conceals divisional differences"
     ],
     "correctIndex": 2,
@@ -2007,7 +2007,7 @@
     "topic": "Serial process capacity",
     "stem": "Every case needs ten minutes of specialist assessment and five minutes of release review by the same qualified team. That team has 600 minutes daily; other stages support eighty cases daily. A proposal treats assessment and release as independent capacities of sixty and 120 cases. What planning correction is required?",
     "choices": [
-      "Combine both demands on the shared team; sustainable capacity is forty cases daily",
+      "Combine both demands: the shared team can sustain forty cases daily",
       "Use ninety daily by averaging the separately calculated specialist capacities",
       "Use eighty daily because the surrounding stages limit the wider process",
       "Use sixty daily because assessment is the slower of the two specialist activities"
@@ -2213,7 +2213,7 @@
       "Both fields are inherited from the enclosing classification category",
       "The identifier is a default; the review date is a content-extracted value",
       "Both fields should be treated as immutable system properties",
-      "The identifier is system-generated; the review date is an editable default"
+      "A system-generated identifier and an editable default review date"
     ],
     "correctIndex": 3,
     "rationale": "System fields are automatically established by a triggering event and generally cannot be changed; defaults may be updated when circumstances require. Classification inheritance is a different mechanism, making the review date immutable would preserve a potentially wrong date, and neither described value is extracted from document content.",
@@ -2593,7 +2593,7 @@
     "choices": [
       "On-demand scanning triggered by each future retrieval request",
       "Day-forward scanning while retaining existing boxes in the same room",
-      "Full backfile conversion of retained files with planned quality acceptance",
+      "Convert all retained backfiles with planned quality acceptance",
       "Conversion of frequently requested files while leaving other boxes onsite"
     ],
     "correctIndex": 2,
@@ -2642,7 +2642,7 @@
     "topic": "Case progress and content protection",
     "stem": "An accident case contains a public incident summary and restricted medical evidence. Reviewers need a combined view of case progress, but only medical specialists may read the medical details. Which case-management capability best meets both needs?",
     "choices": [
-      "Coordinate the case while enforcing access controls on its constituent material",
+      "Coordinate case progress while controlling access to each component",
       "Apply identical unrestricted access to every item in the case",
       "Replace case-level progress reporting with separate unconnected document lists",
       "Store medical evidence outside the case without any documented relationship"
@@ -2772,7 +2772,7 @@
       "Use image PDFs because visible numbers contain the complete pricing evidence",
       "Deliver only the final total from each workbook in a summary table",
       "Print the worksheets and scan them to make the collection uniform",
-      "Produce the agreed usable format and validate formulas and metadata are preserved"
+      "Use the agreed usable format; verify formulas and metadata survive"
     ],
     "correctIndex": 3,
     "rationale": "Production should meet the agreed format and preserve responsive information, here including formulas and metadata. Image-only PDFs and print-and-scan workflows lose that functionality. Summary totals omit the decision logic. Review convenience does not justify changing an agreement in a way that removes relevant evidence.",
@@ -3053,7 +3053,7 @@
     "choices": [
       "Only the records team needs to understand the changed classifications",
       "Change management is unnecessary because the existing application remains in use",
-      "Process guidance, role changes, and training still require implementation planning",
+      "Plan process guidance, changed roles and training for implementation",
       "The policy becomes operational once its final document is approved"
     ],
     "correctIndex": 2,
@@ -3153,7 +3153,7 @@
     "stem": "A federation project can copy old permissions quickly, but business owners confirm that several legacy groups mix current staff and former role holders. The launch requires shared discovery without broader disclosure. Which design sequence best addresses the risk while preserving business ownership of access decisions?",
     "choices": [
       "Retain legacy permissions and hide search previews while leaving full-document links available",
-      "Validate role membership and access needs with owners, then test source-to-federation enforcement",
+      "Validate role membership and access with owners, then test enforcement across the federation",
       "Copy permissions, add access logging, and ask owners to review exposed results after launch",
       "Give the federation team authority to infer access from folder names and document classifications"
     ],
@@ -3229,7 +3229,7 @@
     "stem": "A finance team searches expense documents by project and month. The retention schedule separates employee, executive, and contractor expenses for lifecycle rules. What is the best way to support both needs?",
     "choices": [
       "Treat project navigation as the retention authority for every document",
-      "Use business navigation while mapping records to the applicable schedule categories",
+      "Support business navigation and map records to schedule categories",
       "Replace the approved retention categories with each employee's preferred folders",
       "Force users to browse only through retention schedule codes"
     ],
@@ -3252,7 +3252,7 @@
     "topic": "Conditional requirements",
     "stem": "A repository stores correspondence and equipment inventories. The proposed model requires an addressee for every item, causing staff to enter meaningless values for inventories. Which design best balances completeness and relevance?",
     "choices": [
-      "Make addressee mandatory for applicable correspondence content types",
+      "Require addressee only for applicable correspondence types",
       "Keep addressee mandatory and add a universal placeholder value",
       "Make every metadata field optional for every content type",
       "Remove addressee entirely because some documents cannot use it"
@@ -3278,7 +3278,7 @@
     "stem": "An approval workflow knows when a document moves from review to approval, but staff separately type its status into the repository and often forget. Which metadata method best removes that repeated manual step?",
     "choices": [
       "Extract the word approved from anywhere in the document text",
-      "Update the status field from the workflow's completed transitions",
+      "Derive status from completed workflow transitions",
       "Inherit the status from the uploader's department folder",
       "Default every new document to approved when it is stored"
     ],
@@ -3531,7 +3531,7 @@
     "stem": "A previous repository customization cost $80,000 and cannot be recovered. Management is comparing two future IM options with different prospective costs and benefits. How should the unrecoverable expenditure affect the comparison of which option creates more value from now onward?",
     "choices": [
       "Add it only to the replacement option to protect the previous investment",
-      "Disclose it as historical spending without counting it as a future differential cost",
+      "Disclose past spending, excluding it from future differential costs",
       "Deduct it from the cost of whichever option has the higher license price",
       "Require the more expensive future option to justify the original customization"
     ],
@@ -3863,7 +3863,7 @@
       "Check out the current version to prevent further viewing",
       "Increase the retention period of the current version",
       "Export both files under a new shared document identifier",
-      "Compare the two retained versions to expose their differences"
+      "Compare the retained versions to identify changed clauses"
     ],
     "correctIndex": 3,
     "rationale": "Version comparison directly reveals changes between retained document states. A new identifier does not analyze content, checkout controls concurrent editing rather than explaining prior changes, and longer retention preserves availability without identifying the clauses that changed between the two approved versions.",
@@ -4034,7 +4034,7 @@
     "stem": "A nationwide organization needs local staff who understand branch work, raise recordkeeping problems to the central team, and explain central guidance to colleagues. Which role is the closest fit for this two-way responsibility?",
     "choices": [
       "Enterprise architects approving shared infrastructure investments",
-      "Trained departmental information governance coordinators or liaisons",
+      "Trained departmental governance coordinators or liaisons",
       "External statutory auditors conducting annual financial reviews",
       "Executive sponsors allocating the overall program budget"
     ],
@@ -4060,7 +4060,7 @@
     "choices": [
       "Require operators to retype both selected values into a comments box",
       "Replace the lists with unrestricted text fields for faster entry",
-      "Validate province choices against the selected country's permitted values",
+      "Validate provinces against the chosen country’s permitted values",
       "Increase the number of entries available in both independent lists"
     ],
     "correctIndex": 2,
@@ -4161,7 +4161,7 @@
       "It sets retention equal to the recovery system longest backup cycle",
       "It justifies retaining every superseded version indefinitely without further appraisal",
       "It permits replacement of the managed record with a disaster recovery backup",
-      "It requires exceptional protection but does not independently determine permanent retention"
+      "Vital status requires protection but does not by itself require permanent retention"
     ],
     "correctIndex": 3,
     "rationale": "Vital status identifies exceptional protection needs for essential information, while retention requires a separate assessment of legal and business value. It does not automatically make every version permanent. A backup serves recovery and does not replace record governance. Its cycle cannot independently determine the retention of the underlying vital record.",
@@ -4341,7 +4341,7 @@
       "A higher annual uptime promise must offset the longer recovery duration in the contract",
       "A nightly backup must be retained even if tested restoration still requires twenty hours",
       "A lower enterprise license cost must fund compensation to units after a prolonged interruption",
-      "A validated continuity design must restore required business access within the four-hour tolerance"
+      "Validate a continuity design that restores required access within four hours"
     ],
     "correctIndex": 3,
     "rationale": "The controlling requirement is business access within four hours, which needs a validated continuity design. Annual uptime averages do not guarantee recovery after a common failure. Backups are necessary evidence only if restoration or another continuity method meets the tolerance. Financial compensation does not provide the required operational availability.",
@@ -4443,7 +4443,7 @@
     "choices": [
       "Report reduced operating expense despite the unchanged building expenditure",
       "Report annual rental savings using a hypothetical market lease rate",
-      "Report released space capacity and defer cash-savings claims until realized",
+      "Report released space; claim cash savings only when realized",
       "Report sale proceeds equal to the estimated value of that floor area"
     ],
     "correctIndex": 2,
@@ -4645,7 +4645,7 @@
     "stem": "An expense process diagram begins with a box labeled 'Finance Department' and ends with 'Done.' Reviewers disagree whether travel planning and payment are included. Which revision would most improve the diagram’s shared meaning?",
     "choices": [
       "Add more colors to distinguish the existing boxes",
-      "Specify the triggering event and observable completion outcome",
+      "Define the trigger and observable completion outcome",
       "Remove the end marker so reviewers can infer the boundary",
       "Replace the department name with a more attractive icon"
     ],
@@ -4722,7 +4722,7 @@
     "topic": "Functional and nonfunctional requirements",
     "stem": "A requirements list includes 'route rejected submissions to a correction queue' and 'make the service available during agreed operating hours.' Which distinction correctly classifies these two requirements for the design and evaluation teams?",
     "choices": [
-      "Routing describes a function; availability describes a quality or service characteristic",
+      "Routing is functional; availability is a quality or service requirement",
       "Routing is nonfunctional because it supports users; availability is a workflow function",
       "Both are functional because users depend on the resulting service",
       "Both are domain constraints because they affect the operating environment"
@@ -4902,7 +4902,7 @@
     "choices": [
       "Add only the scanning date and operator name to each image",
       "Generate random document identifiers to balance the collection",
-      "Apply recognition to extract usable text and validate its quality",
+      "Extract usable text through recognition and validate quality",
       "Compress the images further so more fit in the analytics queue"
     ],
     "correctIndex": 2,
@@ -4956,7 +4956,7 @@
       "Retain the account login history while allowing later attachments to replace earlier ones",
       "Require a longer signature block including the approver’s department and telephone number",
       "Require the approver to resend the message when requested without preserving the original attachment",
-      "Bind the approval action to an identified immutable specification version and retain that association"
+      "Bind approval to an identified immutable specification version and preserve the link"
     ],
     "correctIndex": 3,
     "rationale": "Authenticated identity is useful, but the missing evidence concerns the exact approved content. Binding the action to an immutable identified version addresses that gap. A more detailed block does not establish content scope. Login records cannot reconstruct replaced attachments, and resending a message does not preserve the original approval object.",
@@ -4980,7 +4980,7 @@
     "choices": [
       "An automatic increase in the market demand for the service",
       "Elimination of the need to define verification acceptance criteria",
-      "More consistent execution with evidence that the required step occurred",
+      "Consistent execution with evidence of the required step",
       "A guaranteed reduction in the average service completion time"
     ],
     "correctIndex": 2,
@@ -5136,7 +5136,7 @@
       "Insufficient network bandwidth delaying transmission of complete files",
       "Reader-hardware obsolescence preventing access to stored bytes",
       "Storage-media degradation affecting the physical recording surface",
-      "File-format obsolescence affecting interpretation of the stored content"
+      "Format obsolescence preventing interpretation of stored content"
     ],
     "correctIndex": 3,
     "rationale": "The bytes can be retrieved, so the failure lies in interpreting their format. Physical degradation and obsolete readers would interfere with retrieving bytes, while bandwidth affects transmission performance. Current storage therefore does not by itself demonstrate that the stored content remains accessible in a meaningful form.",
@@ -5159,7 +5159,7 @@
     "choices": [
       "Extraction of the identifier from every document's prose",
       "Manual assignment based on the author's personal preference",
-      "Inheritance of context from the containing project structure",
+      "Context inherited from the containing project structure",
       "Recognition of characters in a scanned cover sheet"
     ],
     "correctIndex": 2,
@@ -5184,7 +5184,7 @@
       "Ask vendors to select the mandatory requirements after submitting their proposals",
       "Remove all researched requirements because only interviews can identify valid needs",
       "Preserve every copied item as mandatory because it was used by a peer",
-      "Validate each relevant requirement against local needs, constraints, and stakeholders"
+      "Validate relevant requirements against local needs, constraints and stakeholders"
     ],
     "correctIndex": 3,
     "rationale": "Research can provide useful candidate requirements, but their applicability must be tested against the current business and environment. Peer use is not proof of local necessity. Discarding all research loses a valid elicitation source, while allowing vendors to choose mandatory needs hands a business decision to interested suppliers.",
@@ -5234,7 +5234,7 @@
     "choices": [
       "Require recipient acknowledgments after delivery while keeping the package contents together",
       "Retain recovery copies of keys centrally while leaving recipient packages unchanged",
-      "Deliver keys through a separately protected authorized channel with distinct access controls",
+      "Send keys through a separate authorized channel with independent access controls",
       "Increase encryption strength while retaining the same package and key-delivery arrangement"
     ],
     "correctIndex": 2,
@@ -5285,7 +5285,7 @@
     "choices": [
       "The number of employees using the dashboard in each office",
       "The total documents stored in each office regardless of case status",
-      "The overdue proportion for each office alongside the absolute counts",
+      "Each office’s overdue proportion alongside its absolute count",
       "The combined overdue count without showing each office separately"
     ],
     "correctIndex": 2,
@@ -5333,7 +5333,7 @@
     "topic": "System ownership documentation",
     "stem": "An acquisition leaves employees with three repositories that can store supplier agreements. Staff choose whichever is convenient. What governance artifact most directly resolves where this information belongs after the acquisition?",
     "choices": [
-      "A documented authoritative repository assignment for supplier agreements with user guidance",
+      "A documented authoritative repository for supplier agreements, with user guidance",
       "A naming convention applied consistently while allowing each employee to choose storage",
       "A directory identifying who uploaded each agreement without defining ongoing ownership",
       "A repository inventory listing available capabilities without assigning information types"
@@ -5458,7 +5458,7 @@
     "topic": "Customization lifecycle costs",
     "stem": "A custom extension costs $20,000 and needs $8,000 of regression testing for each of three planned upgrades. Release standards require every upgrade to pass testing, although the quote calls testing optional. A standard alternative costs $38,000 over the same period. All other costs and benefits are equal. What should the budget comparison show?",
     "choices": [
-      "Custom costs $44,000 versus $38,000 standard because required regression work belongs in lifecycle cost",
+      "Custom: $44,000; standard: $38,000, including mandatory regression work in lifecycle cost",
       "Custom costs $28,000 versus $38,000 standard because passing the first upgrade removes later test needs",
       "Both cost $38,000 because the standard price sets the allowable budget for customization",
       "Custom costs $20,000 versus $38,000 standard because the supplier labels testing optional"
@@ -5484,7 +5484,7 @@
     "topic": "Notification under uncertainty",
     "stem": "A confirmed breach has a legally stipulated notification deadline of forty-eight hours. Counsel says an initial notice may be updated as facts emerge. The full forensic investigation will take a week. What response best meets the stated obligation?",
     "choices": [
-      "Coordinate a timely accurate initial notice and provide validated updates as needed",
+      "Coordinate an accurate, timely initial notice, followed by validated updates",
       "Wait for the final forensic report before notifying any required recipient",
       "Send a definitive account immediately despite unverified conclusions about scope",
       "Notify only if the investigation proves that financial harm occurred"
@@ -5535,7 +5535,7 @@
     "stem": "A planning team needs regional service-demand trends but does not need household-level histories. Designers propose removing the planning feature to avoid privacy risk. Which alternative best reflects full functionality in Privacy by Design?",
     "choices": [
       "Keep household-level processing but remove names from the final planning presentation",
-      "Provide suitably aggregated trends that meet planning needs with reduced personal exposure",
+      "Provide planning trends at a suitable aggregation level to reduce personal exposure",
       "Preserve detailed histories and limit their use through a broad confidentiality agreement",
       "Ask planners to obtain approval for each use while retaining the full identifiable history"
     ],
@@ -5559,7 +5559,7 @@
     "topic": "Roadmap breadth",
     "stem": "A program roadmap contains platform purchase, configuration, and go-live. The assessment also found unclear information ownership and inconsistent filing rules. What revision best turns the technology schedule into a more complete IM program roadmap?",
     "choices": [
-      "Include governance, information architecture, and remediation projects alongside technology work",
+      "Add governance, information architecture and remediation to the technology roadmap",
       "Combine the missing work into a general training task without defining accountable deliverables",
       "Mark filing-rule improvement complete when the repository software is installed",
       "Assign ownership after configuration so the deployed defaults can determine responsibility"
@@ -5919,7 +5919,7 @@
     "stem": "A visitor management system stores only face photographs and entrance timestamps, without names or written contact details. Staff can recognize individual visitors. Which conclusion is most appropriate when assessing whether the system contains personal data?",
     "choices": [
       "Entrance timestamps make the images operational data rather than personal data",
-      "Recognizable images can identify people and therefore constitute personal data",
+      "Recognizable images identify people and are personal data",
       "Photographs become personal data only when printed on paper",
       "Only text fields containing names can constitute personal data"
     ],
@@ -6146,7 +6146,7 @@
     "stem": "A manager describes the entire hire-to-pay process as simple routing because an offer letter moves sequentially between two reviewers. The full process also updates HR, payroll, and identity systems. What is the most accurate assessment?",
     "choices": [
       "The payroll step makes all earlier reviews unrelated to the overall process",
-      "The letter route is a subprocess within broader integrated process management",
+      "The letter route is a subprocess within integrated process management",
       "The sequential letter review makes the entire process simple routing",
       "The presence of a document prevents integration with other business systems"
     ],
@@ -6303,7 +6303,7 @@
     "choices": [
       "Transfer all reports as complete at approval and populate missing values with a generic default",
       "Require all reports to wait outside the repository until every metadata value is manually re-entered",
-      "Capture at approval and route missing-value exceptions for resolution before final record acceptance",
+      "Capture on approval; resolve missing-value exceptions before final record acceptance",
       "Keep delayed manual filing and audit a monthly sample after the reporting deadline"
     ],
     "correctIndex": 2,
@@ -6506,7 +6506,7 @@
       "Approve staging based on its shorter copy window and reconcile missed changes after source retirement",
       "Proceed with both systems writable indefinitely to avoid a formal cutover outage",
       "Choose the full migration because its ten-hour duration is the only validated estimate",
-      "Validate staged change reconciliation and recovery before approving a cutover within the outage limit"
+      "Validate staged reconciliation and recovery before approving a cutover within four hours"
     ],
     "correctIndex": 3,
     "rationale": "The full transfer violates the outage requirement, while staging remains unproven until changes and recovery are tested. Validation can establish whether staging meets both continuity and integrity needs. Approving it on copy time alone ignores divergent changes; retiring the source prematurely weakens recovery, and indefinite dual writing creates uncontrolled inconsistency.",
@@ -6586,7 +6586,7 @@
     "choices": [
       "Move the records to cheaper storage and mark the review complete",
       "Destroy the records immediately because the active retention period ended",
-      "Flag the records for authorized review and retain them pending that decision",
+      "Refer records for authorized review and retain them until the decision",
       "Extend every record permanently without conducting the required appraisal"
     ],
     "correctIndex": 2,
@@ -6657,7 +6657,7 @@
     "topic": "Change activities and operational timing",
     "stem": "A revenue team must change case procedures before a fixed external deadline, shortly after its year-end closing peak. Coaching requires its experienced staff. Staged release is technically supported, and a small early cohort can operate independently. Which plan best respects the deadline and transition capacity?",
     "choices": [
-      "Train the early cohort before the peak, then use validated learning for protected post-peak waves",
+      "Train an early cohort before peak activity; use its validated learning in protected later waves",
       "Launch all users after the peak and rely on experienced staff to absorb unplanned support demand",
       "Postpone the whole rollout until closing work and all staff coaching commitments have ended",
       "Train everyone during the closing peak to maximize the interval before the external deadline"
@@ -6837,7 +6837,7 @@
     "topic": "Reidentification risk",
     "stem": "A charity plans to publish a dataset with names removed. One small geographic area contains a single person with a rare condition, and public reports identify that person. What should be assessed before release?",
     "choices": [
-      "Whether combinations of remaining attributes still permit identification and require further protection",
+      "Whether combined remaining attributes can still identify people and need protection",
       "Whether the publishing team believes most readers lack specialist analytic tools",
       "Whether every direct-name field was removed, treating that as sufficient evidence of anonymity",
       "Whether data quality checks passed, treating accuracy as evidence that disclosure risk is acceptable"
@@ -6895,7 +6895,7 @@
     "choices": [
       "Retain eighty daily and classify correction work as outside the station’s capacity calculation",
       "Plan for sixty daily because correction effort replaces the reconciliation overhead",
-      "Plan for 52.5 new cases daily on average and address the shortfall before committing to eighty",
+      "Plan for 52.5 new cases per day on average and resolve the capacity gap before promising eighty",
       "Plan for seventy daily because removing reconciliation time is the only necessary adjustment"
     ],
     "correctIndex": 2,
@@ -7356,7 +7356,7 @@
     "stem": "Discovery processing finds two contract drafts with identical visible pages but different tracked changes and comments. A reviewer proposes treating them as exact duplicates. What is the best response under the stated evidence conditions?",
     "choices": [
       "Convert both to images and deduplicate those images before reviewing native metadata",
-      "Preserve their distinctions and review the potentially relevant differences before culling",
+      "Keep the drafts distinct and review relevant differences before culling",
       "Remove one from review because matching visible pages establish substantive equivalence",
       "Keep the final timestamped draft and discard earlier versions without examining changes"
     ],
@@ -7508,7 +7508,7 @@
     "choices": [
       "Exclude the outcome until each correction has a verified financial value",
       "Substitute the number of installed licenses for the correction-rate measure",
-      "Track the correction rate as a quantified nonfinancial benefit with a target",
+      "Set a correction-rate target as a measurable nonfinancial benefit",
       "Treat the outcome as unmeasurable because it concerns regulatory work"
     ],
     "correctIndex": 2,
@@ -7657,7 +7657,7 @@
     "stem": "An automated process applies the same outdated eligibility rule to every application. Its execution is highly consistent, but many outcomes are wrong. Which conclusion best distinguishes an expected automation benefit from the underlying business-analysis responsibility?",
     "choices": [
       "The process should be judged only by how quickly it applies the rule",
-      "Consistent execution benefits the process only when the implemented rules are valid",
+      "Consistent execution helps only when the implemented rules are valid",
       "The consistency of automated outcomes proves the eligibility policy remains correct",
       "Incorrect outcomes show that automation cannot improve process consistency"
     ],
@@ -7709,7 +7709,7 @@
     "stem": "A team delays procurement repeatedly because minor future scenarios remain undocumented. Mandatory requirements are agreed, while the remaining uncertainties can be evaluated in a pilot. What approach best balances analysis quality with progress?",
     "choices": [
       "Select a supplier before distinguishing mandatory requirements from preferences",
-      "Proceed with a controlled baseline and explicit plans to resolve remaining uncertainties",
+      "Use a controlled baseline with explicit plans to resolve remaining uncertainties",
       "Remove all uncertain requirements without recording their business importance",
       "Continue documentation indefinitely until no participant can imagine another scenario"
     ],
@@ -7815,7 +7815,7 @@
     "choices": [
       "Remove all access until the regulator agrees to work from paper",
       "Grant administrator privileges to avoid delays if an inspection expands",
-      "Provide the scoped inspection permissions without alteration or deletion privileges",
+      "Grant the scoped inspection access without alteration or deletion rights",
       "Retain edit privileges because the regulator may identify inaccurate information"
     ],
     "correctIndex": 2,
@@ -7839,7 +7839,7 @@
     "topic": "Document archival format",
     "stem": "An archive is choosing between two formats that preserve required content equally well in testing. One has a published standard and several independent readers; the other needs a single vendor's viewer. Which distinction most favors the standardized format for long-term access?",
     "choices": [
-      "Multiple documented implementation paths reduce dependence on one supplier's continued support",
+      "Documented alternatives reduce dependence on a single supplier continuing support",
       "Independent readers remove the need to verify migration or rendition quality",
       "Published specifications ensure that every future reader will implement all features correctly",
       "Standardization guarantees that no future preservation monitoring will be needed"
@@ -7866,7 +7866,7 @@
     "stem": "A partner is entitled to specific non-sensitive findings in a report, but has no need for identifiable case details. The original must remain intact for internal evidence. Which approach best supports this selective disclosure?",
     "choices": [
       "Encrypt the complete report and give the partner the key for unrestricted reading",
-      "Create a properly redacted release copy while controlling the original and documenting decisions",
+      "Release a redacted copy, control the original and document disclosure decisions",
       "Remove identifying details from the only original and replace it with the release version",
       "Give the partner temporary access to the entire unredacted source repository"
     ],
@@ -7894,7 +7894,7 @@
       "Local repositories with no shared discovery even for approved nonrestricted metadata",
       "A global full-text index of restricted content with access decisions deferred to download",
       "One global repository containing full copies of all content with country labels",
-      "Local controlled repositories with approved metadata exposed through a governed federated view"
+      "Controlled local repositories, with approved metadata in a governed federated view"
     ],
     "correctIndex": 3,
     "rationale": "Local content with an approved metadata layer can support discovery while respecting the stated content-location constraint. Full global copies breach that constraint despite labels. Complete isolation unnecessarily sacrifices permitted discovery. A full-text index may itself disclose or relocate restricted information, so withholding downloads does not automatically satisfy the rules.",
@@ -7919,7 +7919,7 @@
     "topic": "Requirements as an agreed baseline",
     "stem": "Stakeholders have approved a requirements document. During a pilot, new evidence shows that a previously optional capability is essential to complete a valid business task. How should the team treat the approved document?",
     "choices": [
-      "Use it as a controlled baseline that can be revised through documented agreement",
+      "Treat it as a controlled baseline, revisable through documented agreement",
       "Treat its approval as proof that no new requirement can be legitimate",
       "Implement the capability silently because pilot feedback overrides documentation",
       "Discard every approved requirement and replace the document with vendor notes"
@@ -8152,7 +8152,7 @@
     "stem": "A software robot signs into an inventory application, reads a stock figure, and enters it into a standard replenishment form. Which description best identifies the capability demonstrated, without assuming additional intelligence or autonomy?",
     "choices": [
       "Learning the organization's purchasing strategy independently from the stock figure",
-      "Automating prescribed interactions with existing applications and structured information",
+      "Automating prescribed interactions with existing apps and structured data",
       "Deciding supplier disputes through contextual interpretation of unstructured evidence",
       "Replacing the inventory application with a newly created business database"
     ],
@@ -8177,7 +8177,7 @@
     "topic": "Technology preservation viability",
     "stem": "An archive's original hardware currently reproduces complex records accurately. Maintenance expertise is held by one retiring technician, and no replacement parts are available. Conversion tests lose essential behavior; an emulator is promising but unvalidated. Which next step is most defensible?",
     "choices": [
-      "Retain working access temporarily while capturing dependencies and testing emulation against required behavior",
+      "Keep working access, capture dependencies and test emulation against required behavior",
       "Accept the lossy conversion now because a standard format is preferable for preservation",
       "Commit to maintaining the hardware for the full retention period without testing alternatives",
       "Decommission the hardware immediately because technology preservation is not sustainable indefinitely"
@@ -8233,7 +8233,7 @@
     "choices": [
       "Whether the project announcement uses the new application logo",
       "The original clerical job description without considering changed work",
-      "New exception responsibilities, staffing capacity, and decision guidance",
+      "Exception roles, staffing capacity and decision guidance",
       "The number of filing cabinets already removed from the office"
     ],
     "correctIndex": 2,
@@ -8286,7 +8286,7 @@
     "stem": "A proposed IM capability may enable a new service, but customer uptake is uncertain. Its compliance benefit and implementation costs are better established. What presentation best supports an informed investment decision?",
     "choices": [
       "Apply the same confidence level to compliance and service benefits for reporting consistency",
-      "Show established benefits separately from scenario-based service revenue and its assumptions",
+      "Separate established benefits from projected service revenue and its assumptions",
       "Set uncertain service revenue to zero permanently and remove its strategic rationale",
       "Use a single revenue estimate without showing the uptake assumptions or alternatives"
     ],
@@ -8414,7 +8414,7 @@
     "stem": "An app explains material data-sharing choices only in a lengthy legal document. Users select permissions without understanding which partner receives their information. Which design best supports visibility, transparency, and informed user choice?",
     "choices": [
       "Move the explanation after submission to avoid slowing the transaction",
-      "Present clear contextual explanations of sharing with accessible supporting detail",
+      "Explain sharing clearly in context, with accessible supporting detail",
       "Keep the legal document and add a checkbox confirming that it was read",
       "Use broad statements that permit future sharing without naming its purpose"
     ],
@@ -8512,7 +8512,7 @@
     "topic": "Preservation service design",
     "stem": "An archive stores both original and converted objects. Users need to know whether a rendition preserves formulas or only displayed values. Integrity checks pass, but delivery links do not identify the rendition or its relation to the original. What should the strategy add?",
     "choices": [
-      "Controlled rendition descriptions and relationships presented through the access service",
+      "Controlled rendition descriptions and links to originals in the access service",
       "A native-only access rule regardless of the user's required use and available software",
       "Additional bitstream checks on every delivery without changing rendition descriptions",
       "A rule supplying the smallest readable rendition for every request"
@@ -8748,7 +8748,7 @@
       "Keep the generated explanation and add a broad notice that terminology may vary",
       "Use the industry's common meaning because a larger external evidence base overrides local definitions",
       "Retain both meanings without explaining which one governs the organization's procedures",
-      "Use the approved local meaning, verify dependent claims, and clarify the distinction from industry usage"
+      "Apply the approved local meaning, check dependent claims and distinguish industry usage"
     ],
     "correctIndex": 3,
     "rationale": "The task's context determines the authoritative meaning. Local terminology should govern internal training, and claims depending on the mistaken interpretation need review. Wider usage can be explained but does not override local definitions; unqualified dual meanings or broad disclaimers leave procedural ambiguity in material intended to guide staff.",
@@ -8851,7 +8851,7 @@
     "topic": "Assessment of technical constraints",
     "stem": "The preferred IM application requires infrastructure versions that the organization does not currently support. Before estimating deployment readiness, what should the technical assessment document about this mismatch?",
     "choices": [
-      "Required upgrades, compatibility constraints, and their implementation implications",
+      "Needed upgrades, compatibility constraints and deployment implications",
       "Only the number of employees who prefer the application",
       "The assumption that procurement approval will resolve technical compatibility",
       "The application screenshots without reviewing the infrastructure requirements"
@@ -8932,7 +8932,7 @@
       "Resume stewardship only during the next planned system replacement or migration",
       "Limit remaining stewardship to preserving the completed project's quality acceptance evidence",
       "Transfer all stewardship accountability to the system administrator after technical acceptance",
-      "Maintain accountable stewardship for quality, business needs, and compliance throughout ongoing use"
+      "Continue accountable stewardship for quality, business needs and compliance during use"
     ],
     "correctIndex": 3,
     "rationale": "Stewardship remains accountable for information integrity, quality, business needs, and security requirements as information continues to be used. A migration milestone does not end those responsibilities. IT custodianship concerns the supporting framework; waiting for another migration leaves changes unmanaged, while preserving project evidence records past results without maintaining current stewardship.",
@@ -9009,7 +9009,7 @@
       "June 30, 2028, counting the payment fiscal year as the first year",
       "August 15, 2028, exactly three years after the payment date",
       "December 31, 2028, using the third calendar year after payment",
-      "June 30, 2029, after the payment fiscal year and three further years"
+      "June 30, 2029: payment fiscal year end plus three full years"
     ],
     "correctIndex": 3,
     "rationale": "Payment on August 15, 2025 falls in the fiscal year ending June 30, 2026. Three complete years beyond that end on June 30, 2029. An anniversary calculation ignores the fiscal-year trigger. Counting the initial fiscal year shortens the rule, and calendar-year substitution uses a different boundary.",
@@ -9208,7 +9208,7 @@
     "stem": "A new supplier submits a digitally signed offer and an unfamiliar verification key in the same email. The signature mathematically verifies, and the file displays the supplier director's name. No trusted identity-to-key association has been established. Which acceptance step is still necessary to support the claimed attribution?",
     "choices": [
       "Repeat mathematical verification with a second tool and treat agreement as proof of the director's identity",
-      "Establish the claimed signer's trusted association with the verification key before accepting the attribution",
+      "Verify a trusted link between the claimed signer and verification key before accepting attribution",
       "Compare the visible signature block with the director's website biography and accept the supplied key",
       "Countersign the offer with the buyer's trusted key to establish who originally signed it"
     ],
@@ -9286,7 +9286,7 @@
       "Require them to learn the full retention taxonomy before sharing process knowledge",
       "Exclude them and infer business significance solely from file extensions",
       "Ask them to manually classify every record after automation is deployed",
-      "Use their process knowledge to design rules and validate outcomes with records specialists"
+      "Use clinicians to design rules and validate outcomes with records specialists"
     ],
     "correctIndex": 3,
     "rationale": "Users understand the work and can help design workflows, train analytics, and validate results while records specialists supply lifecycle expertise. Requiring full manual filing defeats the objective. File extensions cannot establish business value, and specialist taxonomy mastery is unnecessary before clinicians can contribute knowledge of their own processes.",
@@ -9308,7 +9308,7 @@
     "topic": "Disposition evidence retention",
     "stem": "A recordkeeping system destroys eligible records and maintains an audit log of those actions. The schedule covers the destroyed business records but says nothing about the log itself. What schedule enhancement is needed?",
     "choices": [
-      "Define the audit log as a governed information series with appropriate retention and disposition",
+      "Schedule the audit log as a governed series with its own retention and disposition",
       "Delete log entries immediately after each successful destruction command",
       "Keep every operational log permanently without assessing its business or evidentiary value",
       "Assign the log the earliest disposal date of any record it documents"
@@ -9335,7 +9335,7 @@
       "The cost of mandatory features only, excluding testing because staff know the business process",
       "Initial coding effort against purchase licenses, leaving later maintenance for an operating budget",
       "Available developer capacity this quarter without assessing future support responsibilities",
-      "Lifecycle development, testing, maintenance, and support costs against suitable commercial options"
+      "Compare full development, testing, maintenance and support costs with commercial options"
     ],
     "correctIndex": 3,
     "rationale": "A build decision creates lifecycle obligations beyond initial coding. Commercial alternatives should be compared on the same full-cost and requirements basis. Moving maintenance to another budget does not remove its cost. Process familiarity does not eliminate testing, and current developer availability does not establish long-term support capacity.",
@@ -9359,7 +9359,7 @@
     "topic": "Case remediation tracking",
     "stem": "An incident investigation has produced findings, but several corrective actions remain open. The case-management system can record assignments and deadlines for those actions. Why is that capability important to managing the case through its full lifecycle?",
     "choices": [
-      "Resolution may require tracking remedial work beyond the initial investigation findings",
+      "Resolution may require tracking corrective work after the investigation findings",
       "Corrective actions belong outside the case because they occur after evidence collection",
       "A case system should manage finished records without any active work information",
       "Case completion is established solely by storing the first investigation report"
@@ -9486,7 +9486,7 @@
     "stem": "Two batches have approved destruction: public brochures on paper and confidential client files on reusable disks. Why should the destruction plan consider different methods even though both batches have reached disposition?",
     "choices": [
       "Digital storage automatically destroys content when the directory entry is removed",
-      "Media characteristics and sensitivity affect how destruction must be performed and verified",
+      "Media type and sensitivity determine suitable destruction and verification methods",
       "Approved disposition removes the need to consider recoverability from either medium",
       "Public information and confidential information must have identical destruction mechanisms"
     ],
@@ -9565,7 +9565,7 @@
     "choices": [
       "Delay the roadmap until all initiatives have detailed plans and funding, then approve the complete program",
       "Assign binding dates to every initiative, using current estimates to establish accountability across all three years",
-      "Show prioritized later initiatives as indicative, with firm commitments limited to approved, sufficiently defined work",
+      "Mark later priorities as indicative; commit only to approved work defined well enough for delivery",
       "Limit the roadmap to funded first-year projects, adding strategic initiatives only after their budgets are approved"
     ],
     "correctIndex": 2,
@@ -9618,7 +9618,7 @@
       "Removal of version control from the entire procedure library",
       "Permission for authors to overwrite the checked-out working file",
       "A rule requiring all controlled edits to occur outside the repository",
-      "An authorized administrative release that preserves version and audit history"
+      "Authorized administrative release preserving version and audit history"
     ],
     "correctIndex": 3,
     "rationale": "Checkout prevents conflicting edits, but governance must allow an accountable resolution when the lock owner is unavailable. Authorized release preserves control and history. Overwriting can lose work, moving edits outside the system bypasses management, and removing version control broadly is disproportionate to one unresolved checkout.",
@@ -9720,7 +9720,7 @@
     "topic": "Process economics and survival",
     "stem": "A service organization loses money on each standard transaction because handling costs now exceed its fixed fee. Demand remains strong, and prices cannot change this year. Which driver most directly supports examining the process now?",
     "choices": [
-      "Restoring economic viability by reducing the cost of delivering the service",
+      "Restoring economic viability by lowering service delivery costs",
       "Replacing the brand identity used in customer communications",
       "Meeting a new reporting rule that has not been identified",
       "Expanding demand for a service already attracting more work than needed"
@@ -9746,7 +9746,7 @@
     "topic": "Senior review scope change",
     "stem": "An organization expands into a new regulated activity after approving its annual governance plan. The operational team cannot fund the additional controls within its mandate. What should senior management review address?",
     "choices": [
-      "The changed context, control adequacy, priorities, and resources needed for the new activity",
+      "The changed context, adequate controls, priorities and resources for the new activity",
       "The operational team performance without considering the expanded business requirements",
       "Only whether the original plan milestones are still being completed on time",
       "Only whether the new activity uses an existing information technology platform"
@@ -9936,7 +9936,7 @@
     "stem": "A rollout plan lists training, communications, and technical tasks, but several assigned teams dispute ownership of the dependencies. Which responsibility most directly belongs to the project management team in resolving this implementation problem?",
     "choices": [
       "Personally deliver every specialist task so ownership disputes cannot occur",
-      "Coordinate documented responsibilities and escalate unresolved accountability barriers",
+      "Coordinate documented roles and escalate unresolved accountability barriers",
       "Wait until go-live to discover which team has capacity to accept each task",
       "Transfer all disputed tasks to the software supplier without changing agreements"
     ],
@@ -9986,7 +9986,7 @@
     "choices": [
       "Permanent ownership by the creator with access granted at personal discretion",
       "Automatic public availability once the creator leaves the organization",
-      "Organizational control and context beyond the individual creator continued employment",
+      "Organizational control and context beyond the creator’s employment",
       "An obligation to distribute identical copies to every employee"
     ],
     "correctIndex": 2,
@@ -10164,7 +10164,7 @@
       "Review the next scheduled media-replacement date against the storage warranty period",
       "Repeat bitstream comparisons to confirm that the copied objects retain their original bytes",
       "Review descriptive titles to confirm that users can identify the intended collection",
-      "Assess the continuing viability of the technology dependencies needed to render the content"
+      "Assess whether the technology needed to render the content remains viable"
     ],
     "correctIndex": 3,
     "rationale": "The gap concerns rendering dependencies beyond the stored bytes and descriptions. Assessing the required applications, operating systems, and interfaces addresses their potential obsolescence. More bitstream checking, title review, and warranty-based refresh scheduling support other preservation functions but do not establish whether the content can still be interpreted.",
@@ -10364,7 +10364,7 @@
     "stem": "A product engineer requests longer retention for a narrowly defined component-test series because a newly established service obligation extends beyond the current schedule. Other engineering records are unaffected. What decision best maintains a defensible retention program?",
     "choices": [
       "Deny any change until the current schedule reaches its routine annual review date",
-      "Validate the obligation and approve a targeted schedule change with implementation responsibility",
+      "Validate the obligation; approve and assign a targeted schedule change",
       "Extend every engineering series to the same longer period for administrative simplicity",
       "Permit the engineer to keep private extra copies while leaving the schedule unchanged"
     ],
@@ -10390,7 +10390,7 @@
     "topic": "Business value in feature requests",
     "stem": "A requirements workshop produces a long list of desired screen functions. For several functions, no participant can explain the task or outcome they support. What should the analyst establish before treating them as approved requirements?",
     "choices": [
-      "The underlying user need and business value associated with each requested capability",
+      "The user need and business value behind each requested capability",
       "Whether developers can implement the feature without extending the current sprint",
       "How frequently each feature appears in competing vendor brochures",
       "Whether a senior stakeholder mentioned the feature during the demonstration"
@@ -10442,7 +10442,7 @@
     "choices": [
       "Increase the number of lossy resaves to standardize visual quality",
       "Keep only the smallest compressed version after each editing session",
-      "Maintain a lossless master and create compressed distribution copies as needed",
+      "Keep a lossless master; compress separate distribution copies as needed",
       "Change filenames after every save without changing the compression process"
     ],
     "correctIndex": 2,
@@ -10521,7 +10521,7 @@
     "choices": [
       "Apply one unrestricted policy and require participants to move sensitive content when noticed",
       "Apply the strictest security and longest retention settings to every item indefinitely",
-      "Apply controls according to content and business context within the collaboration environment",
+      "Apply controls based on content and business context within the workspace",
       "Let document authors choose controls without a common classification or review mechanism"
     ],
     "correctIndex": 2,
@@ -10548,7 +10548,7 @@
       "Overwrite prior notices with the provider's latest text and retain only the date of replacement",
       "Append corrected paragraphs to old notices without distinguishing which version applied at each time",
       "Freeze the initially imported notices and let staff consult the provider separately for corrections",
-      "Retain dated captured versions and source context while clearly designating the current corrected notice"
+      "Keep dated versions and source context; clearly identify the current corrected notice"
     ],
     "correctIndex": 3,
     "rationale": "The two business needs require both a clear current version and retained evidence of earlier captured guidance. Overwriting loses historical content, freezing leaves local guidance stale, and undifferentiated appending obscures temporal meaning. Controlled version relationships and source context support current use and later reconstruction despite changes outside organizational control.",
@@ -10597,7 +10597,7 @@
     "topic": "Reproducible automated compliance",
     "stem": "Two agencies perform the same records activity under the same approved requirements but configure separate capture workflows. Audit samples show different outcomes for identical events, despite both workflows completing successfully. Which change most directly realizes automation's benefit of repeatable compliance?",
     "choices": [
-      "Publish controlled shared business rules and verify equivalent outcomes across both workflows",
+      "Share controlled business rules and verify equivalent outcomes in both workflows",
       "Compare aggregate capture totals and reconcile only differences in overall transaction volume",
       "Add mandatory human confirmation of every output while retaining separate rule definitions",
       "Standardize the workflow product and preserve each agency's existing local rule configuration"
@@ -10653,7 +10653,7 @@
       "Matching total storage capacity and maximum file sizes against the expected collection",
       "Opening generated previews of every file type without testing management workflows",
       "Successful upload and download of each file type using administrator accounts",
-      "Representative creation, retrieval, access, and lifecycle workflows for required content types"
+      "Required creation, retrieval, access and lifecycle workflows across content types"
     ],
     "correctIndex": 3,
     "rationale": "The vendor must demonstrate management of the content through real business activities and authorized roles. Administrator transfers show storage capability, capacity measures scale, and previews demonstrate presentation. None establishes that ordinary users can retrieve, control, approve, retain, or otherwise manage representative content as required across its lifecycle.",
@@ -10729,7 +10729,7 @@
     "stem": "A recently completed enterprise inventory is accurate and covers the planned IM scope. A standard roadmap template nevertheless includes repeating the entire inventory as its first project. How should the program team adapt the template?",
     "choices": [
       "Replace the inventory with a supplier’s generic architecture diagram",
-      "Validate and reuse the current inventory, addressing only material gaps or changes",
+      "Validate and reuse the inventory, updating material gaps or changes",
       "Delete assessment work permanently because an inventory exists today",
       "Repeat the inventory unchanged because every template step must be performed"
     ],
@@ -10856,7 +10856,7 @@
     "choices": [
       "Use local primary stores but exempt replicated personal content from location requirements",
       "Let local offices disregard common policies because their stores remain separate",
-      "Maintain permitted local stores with centrally defined policies and controlled local enforcement",
+      "Keep permitted local stores under central policies with controlled local enforcement",
       "Centralize all content first and apply local labels after migration"
     ],
     "correctIndex": 2,
@@ -10934,7 +10934,7 @@
       "Display every available event with no prioritization or alert thresholds",
       "Choose metrics solely because the vendor supplies them by default",
       "Report historical storage totals as the main indicator of deadline performance",
-      "Select deadline, stage-age, and dependency indicators tied to defined interventions"
+      "Link deadline, stage-age and dependency indicators to defined interventions"
     ],
     "correctIndex": 3,
     "rationale": "Monitoring should capture meaningful indicators and specify how they inform action. Deadline, stage-age, and dependency data can identify threatened commitments and intervention points. An unfiltered event stream can obscure priorities. Vendor defaults may not match business goals, and storage totals do not directly measure or explain service timing.",
@@ -10985,7 +10985,7 @@
     "choices": [
       "Assign whole cases to administrative staff and audit a sample of their decisions",
       "Add an administrator after final review to reassemble evidence for filing",
-      "Move validated preparation to administrative staff and retain accredited final review",
+      "Delegate validated preparation to administrators; retain accredited final review",
       "Require reviewers to work faster while keeping preparation and decisions unchanged"
     ],
     "correctIndex": 2,
@@ -11111,7 +11111,7 @@
     "stem": "A dashboard shows that governance targets were met, but an audit finds that a small high-risk division was excluded from the metric denominator. What should senior management require before accepting the reported result?",
     "choices": [
       "Acceptance of the result because the published numerical targets were technically achieved",
-      "A corrected scope and risk-based evaluation of the excluded division alongside overall performance",
+      "Correct the scope and evaluate the excluded division by risk alongside overall results",
       "A higher enterprise target next year without changing the current measurement scope",
       "Removal of the division from the governance policy to align scope with reporting"
     ],
@@ -11138,7 +11138,7 @@
     "choices": [
       "Allocate equal funding per collection to avoid choosing among different business values",
       "Convert the largest complex files first because file size directly measures preservation urgency",
-      "Complete a targeted inventory linking impending access risks with obligations, value, and required uses",
+      "Inventory access risks, obligations, value and required uses before prioritizing",
       "Convert the greatest number of small common-format files to maximize demonstrated throughput"
     ],
     "correctIndex": 2,
@@ -11164,7 +11164,7 @@
     "stem": "Four teams request a case-management application because each handles many documents and contributors. Funding covers one initial use case. The selection criterion is a defined unit opened and closed to achieve an accountable outcome, rather than continuing maintenance of a subject collection. Which proposed scope best meets that criterion?",
     "choices": [
       "The shared collection of published research outputs, organized by subject and refreshed as new publications appear",
-      "An individual research-funding proposal, from submission through evidenced award or rejection and resulting case closure",
+      "One research-funding proposal, from submission to an evidenced decision and case closure",
       "The complete research-policy library, continually revised as policy and professional guidance change",
       "The institution's permanent research-partner directory, updated whenever participants or their contact details change"
     ],
@@ -11215,7 +11215,7 @@
     "topic": "Mixed digitization program",
     "stem": "A clinic selected on-demand scanning for historical files. A new service now requires an active cohort's records within minutes, but most closed files still receive rare requests. Funding is limited. What adjustment best responds to the changed demand?",
     "choices": [
-      "Convert the active cohort in advance while retaining on-demand scanning for rarely used closed files",
+      "Pre-scan the active cohort; keep on-demand capture for rarely used closed files",
       "Keep on-demand scanning for every file and increase priority labels on urgent requests",
       "Convert only newly created records and defer every historical cohort to later funding",
       "Begin full backfile conversion in chronological order before changing the retrieval process"
@@ -11243,7 +11243,7 @@
       "Use the most recent uploader's unit for every ambiguous case and rely on later access complaints",
       "Disable the ownership requirement during migration and release every item under the target's default permissions",
       "Set every ambiguous case to a common business unit so the required field passes validation",
-      "Apply validated ownership mappings and quarantine unresolved cases for accountable resolution before normal routing"
+      "Use validated ownership mappings and quarantine unresolved cases for accountable resolution"
     ],
     "correctIndex": 3,
     "rationale": "Validated mappings preserve known context, while restricted exceptions avoid unsupported ownership driving access. Uploader identity is not necessarily ownership, a common filler produces false certainty, and disabling the field with default release bypasses the very control it supports. The design should distinguish verified information from unresolved inference.",
@@ -11499,7 +11499,7 @@
     "topic": "Assurance-proportionate signing",
     "stem": "Policy allows authenticated portal acceptance for low-risk service notices if the accepted version and intent are recorded. A separate engineering approval requires independently verifiable signer identity and content integrity. Which design most appropriately addresses these differing requirements?",
     "choices": [
-      "Use evidenced portal acceptance for notices and verified digital signatures for engineering approvals",
+      "Use recorded portal acceptance for notices and verified digital signatures for approvals",
       "Use the same typed name field for both because both actions express intent",
       "Use an email signature block for engineering approvals and portal logs for notices",
       "Require cryptographic signatures for both solely to avoid assessing their different evidence needs"
@@ -11553,7 +11553,7 @@
       "Close the migration because the utility detected no transfer errors",
       "Accept the target based solely on the vendor's successful demonstration environment",
       "Remove the source immediately to encourage users to discover any issues",
-      "Validate meaningful user retrieval and use alongside technical reconciliation results"
+      "Validate user retrieval and use as well as technical reconciliation"
     ],
     "correctIndex": 3,
     "rationale": "Technical completion does not establish that users can interpret and use migrated content in their actual work. Representative user validation can expose subtle errors alongside reconciliation. Closing on utility status alone is insufficient, premature removal threatens recovery, and a vendor demonstration does not validate the organization's migrated cases.",
@@ -11576,7 +11576,7 @@
     "stem": "A consultant proposes a gap analysis based on an assumed current maturity score, without reviewing existing practices. What should the organization establish first to make the analysis useful for prioritizing improvement work?",
     "choices": [
       "A list of desired products ranked by vendor market share",
-      "An evidence-based current-state assessment and an agreed needed future state",
+      "An evidenced current state and an agreed necessary future state",
       "A single score copied from another organization in the same industry",
       "A target budget chosen before the nature of the gaps is understood"
     ],
@@ -11601,7 +11601,7 @@
     "topic": "Expanding capacity before replacement",
     "stem": "An existing IM system meets mandatory functions but responds slowly under the new workload. Supported configuration and capacity changes are available. A proposed replacement also needs migration and retraining. What evaluation best supports a defensible choice?",
     "choices": [
-      "Test the supported improvement options and compare their full costs and outcomes with replacement",
+      "Compare supported improvements and replacement on full costs and outcomes",
       "Retain the system indefinitely because meeting functions proves capacity is adequate",
       "Compare acquisition prices without considering performance under representative demand",
       "Replace the system immediately because any performance issue proves functional unfitness"
@@ -11630,7 +11630,7 @@
       "Apply the same mitigation priority because both incidents have equal record counts",
       "Defer mitigation priorities until there is evidence of actual misuse of either dataset",
       "Rank incidents by notification deadlines alone without evaluating likely individual harm",
-      "Assess information sensitivity, likely consequences, affected people, and exposure conditions"
+      "Evaluate sensitivity, potential harms, affected people and exposure conditions"
     ],
     "correctIndex": 3,
     "rationale": "Risk assessment examines compromised information and potential consequences, including harm to people. Notification deadlines matter but are not a complete risk assessment. Waiting for confirmed misuse can delay preventative mitigation. Equal record counts do not establish equivalent sensitivity, exposure, or likely harm across the two incidents.",
@@ -11653,7 +11653,7 @@
     "choices": [
       "Embedded design satisfied once the production database is encrypted",
       "User choice satisfied solely by an initial consent checkbox",
-      "Lifecycle protection extending through handling and appropriate destruction",
+      "Lifecycle protection through handling and secure destruction",
       "Transparency satisfied solely by publishing an accurate collection notice"
     ],
     "correctIndex": 2,
@@ -11676,7 +11676,7 @@
     "topic": "Stakeholder-supported future state",
     "stem": "A program lead drafts a future-state IM vision entirely alone. Several affected units later explain that it conflicts with their core operating needs. Which strategy-development practice would most directly reduce this risk?",
     "choices": [
-      "Iteratively define the future state through consultation with affected stakeholders",
+      "Develop the future state iteratively with affected stakeholders",
       "Finalize the strategy before asking business units about their objectives",
       "Let the chosen technology’s default configuration determine the business vision",
       "Limit the vision to the needs of whichever unit provides project funding"
@@ -11730,7 +11730,7 @@
     "stem": "During evaluation, nobody can explain why a costly reporting requirement is marked mandatory. Its original requestor and decision rationale were not recorded. What improvement to requirements practice most directly prevents this problem in subsequent revisions?",
     "choices": [
       "Record only the latest feature wording and remove earlier decision records",
-      "Track provenance, prioritization rationale, versions, and approvals for each requirement",
+      "Record each requirement's source, priority rationale, versions and approvals",
       "Allow suppliers to downgrade requirements when their implementation is expensive",
       "Treat every requested report as mandatory to avoid needing a rationale"
     ],
@@ -11807,7 +11807,7 @@
     "choices": [
       "Stop recording omissions once the receiving team has repaired them",
       "Increase local correction staffing without changing upstream preparation",
-      "Provide structured defect feedback and revise upstream preparation controls",
+      "Feed recurring defects upstream and improve preparation controls",
       "Measure only upstream release speed to encourage faster transfers"
     ],
     "correctIndex": 2,
@@ -12012,7 +12012,7 @@
       "Environmental controls make future format conversion unnecessary for retained records",
       "Environmental controls replace the need for compatible hardware interfaces",
       "Environmental controls eliminate format risks when files have descriptive titles",
-      "Environmental controls reduce degradation but do not resolve software or reader obsolescence"
+      "Environmental controls limit degradation, not software or reader obsolescence"
     ],
     "correctIndex": 3,
     "rationale": "Climate control protects media against deterioration, which is only one preservation risk. Software and reader obsolescence can prevent access to physically intact records. Titles do not supply interpretation software, environmental protection cannot guarantee future usability, and compatible interfaces remain necessary to retrieve information from its medium.",
@@ -12290,7 +12290,7 @@
     "topic": "Security feature validation",
     "stem": "A provider claims its rights controls prevent printing after documents leave the repository. The business relies on that restriction for external sharing. What should be tested before approving the proposed sharing route?",
     "choices": [
-      "Whether the restriction is enforced in the actual recipient applications and supported environments",
+      "Whether recipient applications and supported environments enforce the restriction",
       "Whether external recipients promise to install compatible applications at some future date",
       "Whether the provider uses encryption somewhere within its storage service",
       "Whether the repository labels the files confidential before the export starts"
@@ -12392,7 +12392,7 @@
     "stem": "A process owner wants to explain why a particular request was rejected months earlier. The new workflow records rule outcomes, responsible roles, and execution history. Which benefit is most directly supported by those records?",
     "choices": [
       "Assurance that no person could have configured an inappropriate rule",
-      "Greater traceability of the process execution and responsibility for the outcome",
+      "Traceability of process execution and responsibility for outcomes",
       "Elimination of the need to preserve the relevant application evidence",
       "Proof that the applied business rule was substantively correct in every case"
     ],
@@ -12444,7 +12444,7 @@
     "topic": "Validation versus completeness",
     "stem": "A form requires a project code and prevents blank submission. Users enter inactive or nonexistent codes, so every record appears complete. Which control most directly improves the field's substantive quality?",
     "choices": [
-      "Validate entered codes against the permitted project-reference values",
+      "Check entered codes against permitted project-reference values",
       "Require the same code to be typed a second time",
       "Increase the minimum number of characters in the code",
       "Add an optional description field without changing code validation"
@@ -12496,7 +12496,7 @@
     "choices": [
       "Replace while useful with a longer phrase expressing the same discretion",
       "Allow each department to choose an undocumented disposal date during upload",
-      "Define the series scope, objective trigger, period, and authorized disposition action",
+      "Specify series scope, an objective trigger, period and authorized disposition",
       "Add file-size limits without clarifying which business records belong in the row"
     ],
     "correctIndex": 2,
@@ -12521,7 +12521,7 @@
     "choices": [
       "Encrypting attachments while sending the decryption key to the same unverified requester",
       "More frequent password changes without changing how requests are verified",
-      "Verification procedures and role-specific training for sensitive requests, reinforced by checks",
+      "Verify sensitive requests through trained staff, procedures and reinforcing checks",
       "Longer retention of sent messages without changing the disclosure process"
     ],
     "correctIndex": 2,
@@ -12547,7 +12547,7 @@
     "stem": "A licensing map shows approved applications ending with license issue. Rejected and withdrawn applications continue into an unlabeled loop, even though both can close without issue. Which correction best reflects sound process-map design?",
     "choices": [
       "Force rejected applications into the license-issue end state for consistency",
-      "Show defined closure outcomes for rejection and withdrawal as well as approval",
+      "Define closure outcomes for rejected, withdrawn and approved applications",
       "Use an unconnected note rather than resolving the affected paths",
       "Delete the rejection and withdrawal decisions to maintain one outcome"
     ],
@@ -12672,7 +12672,7 @@
     "stem": "Two repositories contain identical contract bitstreams. One instance has approval history; the other links to a dispute case and a different hold. The target supports one stored object with separate governed relationships. Which deduplication decision is best supported?",
     "choices": [
       "Keep the copy with the latest approval and treat its lifecycle controls as sufficient",
-      "Consolidate storage only after validating preservation of both histories, relationships, and applicable controls",
+      "Consolidate only after validating both histories, governed relationships and controls",
       "Keep both files unchanged and defer all context mapping because duplicate bytes cannot be consolidated safely",
       "Consolidate immediately and retain the discarded repository's filename as evidence of its context"
     ],
@@ -12749,7 +12749,7 @@
     "topic": "Production process variability",
     "stem": "A high-volume benefits service applies standard rules but includes predefined branches for different applicant categories. A manager calls it ad hoc because not every application follows the identical route. Which assessment is most accurate?",
     "choices": [
-      "It can remain a production process with repeatable rule-based variations",
+      "A production process can have repeatable, rule-based variations",
       "It has no process until every application follows one identical path",
       "It is simple linear routing because it has a common start",
       "Any branch makes a process ad hoc regardless of its rules"

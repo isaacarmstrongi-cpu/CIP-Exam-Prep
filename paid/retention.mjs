@@ -26,11 +26,12 @@ export function maintainRetention(store,{apply=false}={}){
     const totals=new Map();
     for(const row of rows){
      const attempt=finishAttempt(JSON.parse(row.body),now),score=grade(attempt,store.bank),year=new Date(attempt.startedAt).getUTCFullYear();
-     for(const domain of score.domains){const key=`${year}:${attempt.set}:${domain.id}`,total=totals.get(key)||{year,exam:attempt.set,domain:domain.id,attempts:0,correct:0,total:0};total.attempts++;total.correct+=domain.correct;total.total+=domain.total;totals.set(key,total);}
+     for(const domain of score.domains.filter(d=>d.total)){const key=`${year}:${attempt.set}:${domain.id}`,total=totals.get(key)||{year,exam:attempt.set,domain:domain.id,attempts:0,correct:0,total:0};total.attempts++;total.correct+=domain.correct;total.total+=domain.total;totals.set(key,total);}
     }
     if(apply){
      for(const total of totals.values())db.prepare('INSERT INTO study_totals VALUES(?,?,?,1,?,?,?) ON CONFLICT(year,exam,domain) DO UPDATE SET learners=learners+1,attempts=attempts+excluded.attempts,correct=correct+excluded.correct,total=total+excluded.total').run(total.year,total.exam,total.domain,total.attempts,total.correct,total.total);
      db.prepare('DELETE FROM attempts WHERE user_id=?').run(user.id);
+     db.prepare('DELETE FROM question_reviews WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM email_actions WHERE user_id=?').run(user.id);
      // Keep only minimal contact/purchase evidence while financial retention remains.

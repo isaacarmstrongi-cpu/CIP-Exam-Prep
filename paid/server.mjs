@@ -87,6 +87,8 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
           return json(res,202,{ok:true});
         }
         if(requireVerification&&!user.emailVerified)throw new Problem(403,'Verify your email address before continuing.');
+        if(path===`${base}/api/insights`&&req.method==='GET')return json(res,200,store.learning.insights(user.id));
+        if(path===`${base}/api/practice`&&req.method==='POST')return json(res,201,store.view(user.id,store.learning.start(user.id,data).id));
         if(path===`${base}/api/checkout`&&req.method==='POST'){
           if(!ready())throw new Problem(503,'Enrollment is not open yet.');
           if(store.access(user.id).active)throw new Problem(409,'Your package is already active.');
@@ -104,16 +106,18 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         }
         if(path===`${base}/api/attempts`&&req.method==='GET')return json(res,200,{attempts:store.history(user.id)});
         if(path===`${base}/api/attempts`&&req.method==='POST')return json(res,201,store.view(user.id,store.start(user.id,data.set).id));
-        const match=path.match(new RegExp(`^${base}/api/attempts/([a-zA-Z0-9-]+)(/submit)?$`));
+        const match=path.match(new RegExp(`^${base}/api/attempts/([a-zA-Z0-9-]+)(/(?:submit|check))?$`));
         if(match){
-          if(match[2]&&req.method==='POST')store.submit(user.id,match[1]);
+          if(match[2]==='/submit'&&req.method==='POST')store.submit(user.id,match[1]);
+          else if(match[2]==='/check'&&req.method==='POST')store.learning.check(user.id,match[1]);
           else if(!match[2]&&req.method==='PATCH')store.update(user.id,match[1],data);
           else if(req.method!=='GET'||match[2])throw new Problem(405,'Method not allowed.');
-          return json(res,200,store.view(user.id,match[1]));
+          const response=store.view(user.id,match[1]);if(url.searchParams.get('state')==='1'&&response.attempt.status==='active')delete response.questions;
+          return json(res,200,response);
         }
         throw new Problem(404,'Not found.');
       }
-      const files=new Map([[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
+      const files=new Map([[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
       if(req.method==='GET'&&files.has(path)){const[file,type]=files.get(path);res.setHeader('Content-Type',`${type}; charset=utf-8`);return res.end(readFileSync(resolve(root,file)));}
       throw new Problem(404,'Not found.');
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e instanceof Problem?e.message:'Something went wrong. Please try again.'});else res.end();if(!(e instanceof Problem))console.error('Request failed:',e.name);}

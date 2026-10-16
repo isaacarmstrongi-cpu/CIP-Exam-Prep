@@ -14,3 +14,10 @@ test('perfect and all-wrong results use actual keys, not choice position',()=>{c
 test('clear answer and manual submission preserve the selected values and block later edits',()=>{const a=createAttempt(4,1000,'manual');const q=bank[0];answerAttempt(a,q.id,q.correctIndex,1100);assert.equal(grade(a,bank).correct,1);answerAttempt(a,q.id,null,1200);assert.equal(grade(a,bank).answered,0);answerAttempt(a,q.id,2,1300);const b=finishAttempt(a,1400);assert.equal(b.reason,'manual');assert.equal(b.answers[q.id],2);assert.equal(answerAttempt(b,q.id,3,1500),false);assert.deepEqual(finishAttempt(b,1600),b);});
 test('saved attempt validation rejects malformed and mismatched data',()=>{const a=createAttempt(4,1000,'valid');assert.ok(validAttempt(a,bank));assert.equal(validAttempt({...a,deadline:NaN},bank),false);assert.equal(validAttempt({...a,set:99},bank),false);assert.equal(validAttempt({...a,answers:{unknown:1}},bank),false);assert.equal(validAttempt({...a,answers:{[bank[0].id]:4}},bank),false);assert.equal(validAttempt({...a,flags:['unknown']},bank),false);assert.equal(validAttempt({...a,version:'old'},bank),false);assert.ok(validAttempt(finishAttempt(a,2000),bank));});
 test('timer formatting is stable at boundaries',()=>{assert.equal(formatTime(DURATION_MS),'02:00:00');assert.equal(formatTime(1001),'00:00:02');assert.equal(formatTime(0),'00:00:00');});
+
+test('simple option-length cues do not approach the official passing threshold on any form',()=>{
+ for(const set of [4,5,6,7,8])for(const choose of [Math.max,Math.min]){
+  let expected=0;for(const q of bank.filter(q=>q.set===set)){const lengths=q.choices.map(c=>c.length),target=choose(...lengths);if(lengths[q.correctIndex]===target)expected+=1/lengths.filter(n=>n===target).length;}
+  assert.ok(expected<40,'Editorial cue review required: form '+set+' length-only expected score '+expected);
+ }
+});

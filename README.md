@@ -6,13 +6,19 @@ A responsive, independent CIP practice application with 500 original questions i
 
 The `paid/` service runs on the existing Hostinger VPS with Node.js 24, SQLite, Stripe card checkout and Resend account emails. The package is $45 USD once for 90 days from confirmed payment, with unlimited practice retakes. Public enrollment remains closed until the launch requirements in `paid/OPERATIONS.md` are resolved.
 
-The portal stores accounts and attempts on the server, verifies email ownership, supports single-use password recovery, and invalidates sessions after a password reset. Its server controls exam deadlines and grading and withholds answer keys until submission. Signed payment events grant access once; full refunds and disputes revoke it. Request limits survive service restarts. A backup tool creates checked snapshots and verifies restoration in isolation.
+The portal stores accounts and attempts on the server, verifies email ownership, supports single-use password recovery, and invalidates sessions after a password reset. Its server controls exam deadlines and grading and withholds timed-exam answer keys until submission. Untimed study reveals only checked answers during the session. Signed payment events grant access once; full refunds and disputes revoke it. Request limits survive service restarts. A backup tool creates checked snapshots and verifies restoration in isolation.
 
 The owner approved revised student terms, refunds and privacy publication on October 15, 2026. Checkout requires the current policy agreement and preserves the exact document plus a dated purchase receipt. Learners can download their account records and archived purchase terms. Daily retention supports shorter study-data storage and seven-year minimal financial evidence. Policy publication and final launch approval are separate server gates; final launch remains off while launch requirements are unresolved. Private repository updates can use the credential-free-on-server upload workflow in `ops/PRIVATE-DEPLOYMENT.md`.
 
 Run `npm ci`, then configure the protected settings documented in `paid/OPERATIONS.md` before starting `node paid/server.mjs`. Never put credentials in Git or serve the repository root or `dist/` as the paid portal. The repository has previously been public, including question-bank history; private hosting alone cannot retract prior copies.
 
 `npm test` covers both applications. Deployment checks have also included a real Stripe sandbox purchase and server-side backup restoration. Those results do not establish tax readiness, legal-policy approval, real email delivery or permission to open enrollment.
+
+## Learning tools added October 16, 2026
+
+The paid dashboard provides focused 5/10/20-question sessions, weakest-domain/missed/flagged/new/due filters, immediate checked-answer explanations, a persistent review schedule, and full-exam first-attempt versus retake history. Exam 5 stays out of the default study pool except for questions already assessed from it. These are study tools, not validated pass predictions. Study accuracy excludes unassessed questions; timed scoring continues to count unanswered questions as zero.
+
+The editorial review tightened 116 correct-option wordings without changing stems, answer indexes, rationales, sources, or the 500-item blueprint distribution. `dist/data/content-review.json` records the option-length audit. Difficulty labels remain editorial until empirical calibration and subject-matter review.
 
 ## Original static demonstration
 
