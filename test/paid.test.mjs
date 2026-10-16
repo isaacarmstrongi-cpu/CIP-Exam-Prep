@@ -44,3 +44,21 @@ test('checkout uses the current card-only API contract and reuses open checkout'
  assert.ok(captured.expires_at>Math.floor(Date.now()/1000)+1800);assert.equal(captured.client_reference_id,f.user.id);
  assert.equal((await fetch(url,options)).status,200);assert.equal(calls,1);
 });
+
+test('sandbox checkout uses its own base path while public registration stays closed',async t=>{
+ const f=await fixture(t);let captured;
+ const stripe={checkout:{sessions:{create:async params=>{captured=params;return {id:'cs_sandbox',url:'https://checkout.stripe.com/example',expires_at:Math.floor(Date.now()/1000)+3600};}}}};
+ const server=createApp({store:f.s,origin,base:'/mcip-sandbox',stripe,price:'price_sandbox',webhookSecret:secret,enrollment:true,registrationOpen:false,secure:true});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const host=`http://127.0.0.1:${server.address().port}`,base=`${host}/mcip-sandbox`;
+ const headers={Origin:origin,'Content-Type':'application/json',Cookie:`procip_session=${f.token}`};
+ const state=await (await fetch(`${base}/api/session`,{headers})).json();
+ assert.equal(state.enrollment,true);assert.equal(state.registrationOpen,false);assert.equal(state.sandbox,true);
+ assert.equal((await fetch(`${base}/api/register`,{method:'POST',headers,body:'{}'})).status,503);
+ assert.equal((await fetch(`${base}/api/checkout`,{method:'POST',headers,body:'{}'})).status,200);
+ assert.equal(captured.success_url,`${origin}/mcip-sandbox/student/?payment=complete`);
+ const login=await fetch(`${base}/api/login`,{method:'POST',headers,body:JSON.stringify({email:'student@example.test',password:'A unique test password 123!'})});
+ assert.match(login.headers.get('set-cookie'),/Path=\/mcip-sandbox; HttpOnly; SameSite=Strict; Max-Age=604800; Secure/);
+ assert.equal((await fetch(`${host}/mcip/api/session`)).status,404);
+ assert.equal((await fetch(`${base}/student/`)).status,200);
+});

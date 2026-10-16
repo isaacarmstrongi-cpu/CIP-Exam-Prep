@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import Stripe from 'stripe';
 import { Store, Problem } from './store.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
-export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,secure=true,now=Date.now}) {
+export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now}) {
   const limits=new Map(),checkoutLocks=new Set();
   function limit(key,max) {
     const time=now(),old=limits.get(key),bucket=old&&old.until>time?old:{until:time+60000,count:0};
@@ -49,10 +49,10 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         let data={};if(req.method!=='GET'){try{data=JSON.parse((await body(req)).toString());}catch(e){if(e instanceof Problem)throw e;throw new Problem(400,'Invalid request.');}if(!data||typeof data!=='object'||Array.isArray(data))throw new Problem(400,'Invalid request.');}
         const token=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('procip_session='))?.slice(15)||'';
         const user=store.user(token);
-        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),serverTime:now()});
+        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,serverTime:now()});
         if([`${base}/api/register`,`${base}/api/login`].includes(path)&&req.method==='POST'){
           limit(`auth:${req.socket.remoteAddress}`,10);
-          if(path.endsWith('/register')&&!ready())throw new Problem(503,'Enrollment is not open yet.');
+          if(path.endsWith('/register')&&(!ready()||!registrationOpen))throw new Problem(503,'Enrollment is not open yet.');
           const newToken=path.endsWith('/register')?await store.register(data.email,data.password):await store.login(data.email,data.password);
           if(token)store.logout(token);
           return json(res,200,{ok:true},{'Set-Cookie':cookie(newToken)});
@@ -95,7 +95,12 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
   const bank=JSON.parse(readFileSync(process.env.BANK_PATH||resolve(root,'../dist/data/questions.json'),'utf8'));
   const dbPath=process.env.DATABASE_PATH||resolve(root,'../private/students.sqlite');mkdirSync(dirname(dbPath),{recursive:true,mode:0o700});
   const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:2,timeout:15000}):null;
-  const server=createApp({store:new Store(dbPath,bank),origin,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',secure:!local});
+  const base=process.env.PUBLIC_BASE||'/mcip';if(!/^\/[a-z0-9-]+$/.test(base))throw new Error('PUBLIC_BASE must be a single safe path segment.');
+  const store=new Store(dbPath,bank);
+  if(process.env.STRIPE_LIVE==='false'&&process.env.SANDBOX_SEED_EMAIL?.endsWith('@example.test')&&process.env.SANDBOX_SEED_PASSWORD?.length>=24){
+    try{const token=await store.register(process.env.SANDBOX_SEED_EMAIL,process.env.SANDBOX_SEED_PASSWORD);store.logout(token);}catch(e){if(!(e instanceof Problem)||e.status!==409)throw e;}
+  }
+  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local});
   server.listen(Number(process.env.PORT||4190),'127.0.0.1',()=>console.log('Student portal listening on the loopback interface. Enrollment is '+(process.env.ENROLLMENT_OPEN==='true'?'configured open':'closed')+'.'));
 }
 
