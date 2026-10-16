@@ -44,8 +44,11 @@ systemctl restart procip procip-sandbox
 origin=$(node --env-file=/etc/procip/procip.env -p 'process.env.PUBLIC_ORIGIN')
 curl --retry 4 --retry-connrefused --retry-delay 1 --fail --silent "$origin/mcip/api/session" |
     node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const a=JSON.parse(s);if(a.enrollment!==false||a.registrationOpen!==false)process.exit(1);});"
-install -m 644 public-site/index.html /var/www/html/mcip/index.html
 install -m 644 public-site/styles.css /var/www/html/mcip/styles.css
+install -m 644 public-site/app.mjs /var/www/html/mcip/app.mjs
+install -d -m 755 /var/www/html/mcip/assets
+install -m 644 public-site/assets/learning-journey.jpg /var/www/html/mcip/assets/learning-journey.jpg
+install -m 644 public-site/index.html /var/www/html/mcip/index.html
 trap - ERR
 echo "Verified release $revision deployed; enrollment remains closed."
 echo 'Existing Stripe/email credentials and prior releases were preserved.'
