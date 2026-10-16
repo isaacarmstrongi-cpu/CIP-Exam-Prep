@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import Stripe from 'stripe';
 import { isIP } from 'node:net';
 import { Store, Problem } from './store.mjs';
-import { createEmailSender } from './email.mjs';
+import { createEmailSender,createOwnerAlertSender } from './email.mjs';
+import {startOwnerAlerts} from './owner-alerts.mjs';
 import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage,purchaseConfirmationPage} from './policies.mjs';
 import {TRIAL_VERSION} from './trials.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
@@ -158,6 +159,11 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
   const mailer=createEmailSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,origin,base});
   const trialEnabled=process.env.FRIENDS_TRIAL_ENABLED==='true';
   const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,requireVerification:trialEnabled||process.env.STRIPE_LIVE==='true',trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true',trialEnabled});
+  if(process.env.OWNER_ALERTS_TO){
+    if(!trialEnabled)throw new Error('Owner trial alerts require the isolated friends-trial service.');
+    const send=createOwnerAlertSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,to:process.env.OWNER_ALERTS_TO});
+    server.once('listening',()=>{const stop=startOwnerAlerts(store.ownerAlerts,send);server.once('close',stop);});
+  }
   server.listen(Number(process.env.PORT||4190),'127.0.0.1',()=>console.log('Student portal listening on the loopback interface. Enrollment is '+(process.env.ENROLLMENT_OPEN==='true'?'configured open':'closed')+'.'));
 }
 

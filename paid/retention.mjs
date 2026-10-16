@@ -33,6 +33,7 @@ export function maintainRetention(store,{apply=false}={}){
      for(const total of totals.values())db.prepare('INSERT INTO study_totals VALUES(?,?,?,1,?,?,?) ON CONFLICT(year,exam,domain) DO UPDATE SET learners=learners+1,attempts=attempts+excluded.attempts,correct=correct+excluded.correct,total=total+excluded.total').run(total.year,total.exam,total.domain,total.attempts,total.correct,total.total);
      db.prepare('DELETE FROM attempts WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM question_reviews WHERE user_id=?').run(user.id);
+     db.prepare('DELETE FROM owner_alerts WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id);
      db.prepare('DELETE FROM email_actions WHERE user_id=?').run(user.id);
      // Keep only minimal contact/purchase evidence while financial retention remains.

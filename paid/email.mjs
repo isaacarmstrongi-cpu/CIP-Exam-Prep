@@ -1,4 +1,16 @@
 import { createHash } from 'node:crypto';
+import {ownerAlertMessage} from './owner-alerts.mjs';
+
+export function createOwnerAlertSender({key,from,to,fetcher=fetch}){
+ if(!to)return null;
+ if(!key||!from||/[\r\n]/.test(from)||to!=='isaacarmstrong@live.com')throw new Error('Owner alerts require the approved recipient and configured sending service.');
+ return async event=>{
+  const message=ownerAlertMessage(event);
+  const response=await fetcher('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':`procip-owner-${event.id}`},body:JSON.stringify({from,to:[to],...message})});
+  if(!response.ok){const error=new Error('Owner alert delivery was not accepted.');error.retryable=response.status===429||response.status>=500;throw error;}
+  const result=await response.json();if(typeof result.id!=='string'||!result.id)throw new Error('Owner alert delivery confirmation is missing.');return {id:result.id};
+ };
+}
 
 export function createEmailSender({key,from,origin,base='/mcip',fetcher=fetch}){
   if(!key||!from)return null;

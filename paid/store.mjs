@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { createAttempt, finishAttempt, grade } from '../dist/core.mjs';
 import {createLearning} from './learning.mjs';
 import {createTrials} from './trials.mjs';
+import {createOwnerAlerts} from './owner-alerts.mjs';
 const scrypt = promisify(scryptCallback);
 export const ACCESS_MS = 90 * 24 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -30,6 +31,7 @@ export class Store {
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='retired'))this.db.exec('ALTER TABLE users ADD COLUMN retired INTEGER NOT NULL DEFAULT 0');
     this.trials=createTrials(this,Problem);
+    this.ownerAlerts=createOwnerAlerts(this);
     this.learning=createLearning(this,Problem);
   }
   async register(email, password) {
@@ -135,6 +137,7 @@ export class Store {
       attempts:this.db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).map(row=>JSON.parse(row.body)),
       reviewSchedule:this.db.prepare('SELECT question_id,last_correct,last_seen,next_due,streak,exposures FROM question_reviews WHERE user_id=?').all(userId),
       freeTrial:this.db.prepare('SELECT created,expires,version,terms,revoked FROM trial_access WHERE user_id=?').get(userId)||null,
+      operationalAlerts:this.db.prepare('SELECT kind,occurred,status,sent FROM owner_alerts WHERE user_id=? ORDER BY occurred').all(userId),
       policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
       checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
   }
