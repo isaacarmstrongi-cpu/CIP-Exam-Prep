@@ -18,8 +18,9 @@ export function maintainRetention(store,{apply=false}={}){
    const hold=db.prepare('SELECT until FROM retention_holds WHERE user_id=?').get(user.id);
    if(hold?.until>now){result.heldAccounts++;continue;}
    const purchases=db.prepare('SELECT * FROM purchases WHERE user_id=?').all(user.id);
-   const latestExpiry=purchases.length?Math.max(...purchases.map(p=>p.expires)):null;
-   const due=purchases.length?latestExpiry+RETENTION.studyDays*DAY<=now:user.created+(user.email_verified?RETENTION.unpaidDays:RETENTION.unverifiedDays)*DAY<=now;
+   const trial=db.prepare('SELECT expires FROM trial_access WHERE user_id=?').get(user.id);
+   const latestExpiry=purchases.length||trial?Math.max(...purchases.map(p=>p.expires),trial?.expires||0):null;
+   const due=!user.email_verified&&!purchases.length?user.created+RETENTION.unverifiedDays*DAY<=now:latestExpiry!==null?latestExpiry+RETENTION.studyDays*DAY<=now:user.created+RETENTION.unpaidDays*DAY<=now;
    if(due){
     const rows=db.prepare('SELECT body FROM attempts WHERE user_id=?').all(user.id);
     result.deletedAttempts+=rows.length;
@@ -52,7 +53,7 @@ export function maintainRetention(store,{apply=false}={}){
    if(due&&expired.length===purchases.length){
     result.deletedAccounts++;
     if(apply){
-     for(const table of ['sessions','email_actions','attempts','checkout_agreements','checkouts','policy_acceptances','retention_holds','financial_contacts'])db.prepare(`DELETE FROM ${table} WHERE user_id=?`).run(user.id);
+     for(const table of ['trial_access','sessions','email_actions','attempts','checkout_agreements','checkouts','policy_acceptances','retention_holds','financial_contacts'])db.prepare(`DELETE FROM ${table} WHERE user_id=?`).run(user.id);
      db.prepare('DELETE FROM users WHERE id=?').run(user.id);
     }
    }

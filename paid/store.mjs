@@ -3,6 +3,7 @@ import { randomUUID, randomBytes, createHash, scrypt as scryptCallback, timingSa
 import { promisify } from 'node:util';
 import { createAttempt, finishAttempt, grade } from '../dist/core.mjs';
 import {createLearning} from './learning.mjs';
+import {createTrials} from './trials.mjs';
 const scrypt = promisify(scryptCallback);
 export const ACCESS_MS = 90 * 24 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -28,6 +29,7 @@ export class Store {
     `);
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='retired'))this.db.exec('ALTER TABLE users ADD COLUMN retired INTEGER NOT NULL DEFAULT 0');
+    this.trials=createTrials(this,Problem);
     this.learning=createLearning(this,Problem);
   }
   async register(email, password) {
@@ -100,7 +102,8 @@ export class Store {
   }
   access(id) {
     const row = this.db.prepare('SELECT MAX(expires) AS expires FROM purchases WHERE user_id=? AND revoked=0').get(id);
-    return {active: (row.expires ?? 0) > this.now(),expires:row.expires ?? null};
+    const paid={active:(row.expires??0)>this.now(),expires:row.expires??null},trial=this.trials.access(id);
+    return paid.active?paid:trial.active?trial:{active:false,expires:Math.max(paid.expires||0,trial.expires||0)||null,...(trial.expires&&!paid.expires?{kind:'trial'}:{})};
   }
   acceptPolicies(userId,{version,digest,document}){
     this.db.exec('BEGIN IMMEDIATE');
@@ -131,6 +134,7 @@ export class Store {
     return {exportedAt:this.now(),account,purchases:this.db.prepare('SELECT id,created,expires,revoked FROM purchases WHERE user_id=? ORDER BY created').all(userId),
       attempts:this.db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).map(row=>JSON.parse(row.body)),
       reviewSchedule:this.db.prepare('SELECT question_id,last_correct,last_seen,next_due,streak,exposures FROM question_reviews WHERE user_id=?').all(userId),
+      freeTrial:this.db.prepare('SELECT created,expires,version,terms,revoked FROM trial_access WHERE user_id=?').get(userId)||null,
       policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
       checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
   }

@@ -7,6 +7,7 @@ import { isIP } from 'node:net';
 import { Store, Problem } from './store.mjs';
 import { createEmailSender } from './email.mjs';
 import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage,purchaseConfirmationPage} from './policies.mjs';
+import {TRIAL_VERSION} from './trials.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
 export function clientAddress(req,trustProxy=false){
   const peer=req.socket.remoteAddress;
@@ -17,9 +18,10 @@ export function clientAddress(req,trustProxy=false){
   }
   return peer;
 }
-export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false,policiesApproved=!live,launchApproved=!live}) {
+export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,live=false,enrollment=false,registrationOpen=enrollment,secure=true,now=Date.now,mailer=null,requireVerification=live,trustProxy=false,policiesApproved=!live,launchApproved=!live,trialEnabled=false}) {
+  if(trialEnabled&&(live||!requireVerification||!mailer||!policiesApproved))throw new Error('Friends trial requires an isolated non-live service, approved policies and verified account email.');
   const checkoutLocks=new Set();
-  const ready=()=>Boolean(enrollment&&stripe&&price&&webhookSecret&&policiesApproved&&launchApproved&&(!requireVerification||mailer));
+  const ready=()=>Boolean(!trialEnabled&&enrollment&&stripe&&price&&webhookSecret&&policiesApproved&&launchApproved&&(!requireVerification||mailer));
   const sendAction=(user,purpose)=>{const token=store.issueEmailAction(user.id,purpose);Promise.resolve().then(()=>mailer({to:user.email,purpose,token})).catch(()=>console.error('Account email delivery failed; resend is available.'));};
   const json=(res,status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data));};
   const cookie=token=>`procip_session=${token}; Path=${base||'/'}; HttpOnly; SameSite=Strict; Max-Age=${token?604800:0}${secure?'; Secure':''}`;
@@ -60,7 +62,21 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         let data={};if(req.method!=='GET'){try{data=JSON.parse((await body(req)).toString());}catch(e){if(e instanceof Problem)throw e;throw new Problem(400,'Invalid request.');}if(!data||typeof data!=='object'||Array.isArray(data))throw new Problem(400,'Invalid request.');}
         const token=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('procip_session='))?.slice(15)||'';
         const user=store.user(token);
-        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,requireVerification,recoveryAvailable:Boolean(mailer),policies:{version:POLICY_VERSION,approved:policiesApproved},serverTime:now()});
+        if(path===`${base}/api/session`&&req.method==='GET')return json(res,200,{user:user||null,access:user?store.access(user.id):null,enrollment:ready(),registrationOpen:registrationOpen&&ready(),sandbox:!live,trial:trialEnabled,requireVerification,recoveryAvailable:Boolean(mailer),policies:{version:POLICY_VERSION,approved:policiesApproved},serverTime:now()});
+        if(path===`${base}/api/trial/info`&&req.method==='POST'){
+          if(!trialEnabled)throw new Problem(404,'Not found.');
+          store.limit(`trial-info:${address}`,30);return json(res,200,store.trials.info(data.invite));
+        }
+        if(path===`${base}/api/trial/register`&&req.method==='POST'){
+          if(!trialEnabled)throw new Problem(404,'Not found.');
+          store.limit(`trial-register:${address}`,10,3600000);
+          store.trials.info(data.invite);
+          if(data.accepted!==true||data.version!==TRIAL_VERSION)throw new Problem(400,'Read and agree to the free-trial terms before continuing.');
+          const newToken=await store.register(data.email,data.password),account=store.user(newToken);
+          try{store.trials.activate(account.id,data.invite,data);}catch(e){store.db.prepare('DELETE FROM sessions WHERE user_id=?').run(account.id);store.db.prepare('DELETE FROM users WHERE id=?').run(account.id);throw e;}
+          sendAction(account,'verify');if(token)store.logout(token);
+          return json(res,201,{ok:true},{'Set-Cookie':cookie(newToken)});
+        }
         if(path===`${base}/api/verify-email`&&req.method==='POST'){store.verifyEmail(data.token);return json(res,200,{ok:true});}
         if(path===`${base}/api/reset-password`&&req.method==='POST'){store.limit(`reset:${address}`,10);await store.resetPassword(data.token,data.password);return json(res,200,{ok:true},{'Set-Cookie':cookie('')});}
         if(path===`${base}/api/forgot-password`&&req.method==='POST'){
@@ -87,6 +103,10 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
           return json(res,202,{ok:true});
         }
         if(requireVerification&&!user.emailVerified)throw new Problem(403,'Verify your email address before continuing.');
+        if(path===`${base}/api/trial/activate`&&req.method==='POST'){
+          if(!trialEnabled)throw new Problem(404,'Not found.');
+          return json(res,200,store.trials.activate(user.id,data.invite,data));
+        }
         if(path===`${base}/api/insights`&&req.method==='GET')return json(res,200,store.learning.insights(user.id));
         if(path===`${base}/api/practice`&&req.method==='POST')return json(res,201,store.view(user.id,store.learning.start(user.id,data).id));
         if(path===`${base}/api/checkout`&&req.method==='POST'){
@@ -136,7 +156,8 @@ if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.ur
     try{const token=await store.register(process.env.SANDBOX_SEED_EMAIL,process.env.SANDBOX_SEED_PASSWORD);store.logout(token);}catch(e){if(!(e instanceof Problem)||e.status!==409)throw e;}
   }
   const mailer=createEmailSender({key:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM,origin,base});
-  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true'});
+  const trialEnabled=process.env.FRIENDS_TRIAL_ENABLED==='true';
+  const server=createApp({store,origin,base,stripe,price:process.env.STRIPE_PRICE_ID,webhookSecret:process.env.STRIPE_WEBHOOK_SECRET,live:process.env.STRIPE_LIVE==='true',enrollment:process.env.ENROLLMENT_OPEN==='true',registrationOpen:process.env.REGISTRATION_OPEN!=='false'&&process.env.ENROLLMENT_OPEN==='true',secure:!local,mailer,requireVerification:trialEnabled||process.env.STRIPE_LIVE==='true',trustProxy:process.env.TRUST_PROXY==='loopback',policiesApproved:process.env.POLICIES_APPROVED==='true',launchApproved:process.env.LAUNCH_APPROVED==='true',trialEnabled});
   server.listen(Number(process.env.PORT||4190),'127.0.0.1',()=>console.log('Student portal listening on the loopback interface. Enrollment is '+(process.env.ENROLLMENT_OPEN==='true'?'configured open':'closed')+'.'));
 }
 
