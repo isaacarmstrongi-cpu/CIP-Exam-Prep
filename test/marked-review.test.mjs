@@ -7,7 +7,7 @@ const bank=JSON.parse(readFileSync(new URL('../dist/data/questions.json',import.
 const makeView=()=>({attempt:{id:'review',set:4,index:1,flags:['q1','q3'],answers:{q1:2},status:'active'},questions:Array.from({length:5},(_,i)=>({id:'q'+i,domain:1,stem:'Question '+i,choices:['A','B','C','D']}))});
 test('marked review keeps original numbers and includes only marked questions in navigation',()=>{
  const v=makeView(),n=reviewNavigation(v,true);assert.deepEqual(n.indices,[1,3]);assert.equal(n.previous,null);assert.equal(n.next,3);
- const html=exam(v,{markedOnly:true});assert.match(html,/1 unanswered/);assert.match(html,/Next marked/);assert.match(html,/Question 4, unanswered, marked for review/);assert.ok(!html.includes('data-index="2"'));assert.ok(!html.includes('data-index="4"'));assert.match(html,/The exam clock continues/);
+ const html=exam(v,{markedOnly:true});assert.match(html,/1 unanswered/);assert.match(html,/Next marked/);assert.match(html,/Question 4, unanswered, marked for review/);assert.ok(!html.includes('data-index="2"'));assert.ok(!html.includes('data-index="4"'));assert.match(html,/The exam clock continues/);assert.match(html,/Not sure of an answer/);assert.match(html,/Marking keeps your selected answer/);assert.match(html,/Use <strong>Review marked/);
  v.attempt.index=3;const last=reviewNavigation(v,true);assert.equal(last.previous,1);assert.equal(last.next,null);
  assert.deepEqual(reviewNavigation(v,false).indices,[0,1,2,3,4]);
 });
