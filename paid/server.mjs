@@ -153,6 +153,14 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
           return json(res,202,{ok:true});
         }
         if(requireVerification&&!user.emailVerified)throw new Problem(403,'Verify your email address before continuing.');
+        if(path===`${base}/api/study-plan`){
+          if(req.method==='GET')return json(res,200,store.tools.planView(user.id));
+          if(req.method==='POST'){store.tools.savePlan(user.id,data);return json(res,200,store.tools.planView(user.id));}
+          if(req.method==='PATCH')return json(res,200,store.tools.completePlan(user.id,data));
+        }
+        if(path===`${base}/api/flashcards`&&req.method==='GET')return json(res,200,store.tools.cardList(user.id,{filter:url.searchParams.get('filter')||'due',domain:url.searchParams.has('domain')?Number(url.searchParams.get('domain')):null}));
+        const cardRoute=path.match(new RegExp(`^${base}/api/flashcards/([a-z0-9-]+)/(reveal|rate)$`));
+        if(cardRoute&&req.method==='POST')return json(res,200,cardRoute[2]==='reveal'?store.tools.revealCard(user.id,cardRoute[1]):store.tools.rateCard(user.id,cardRoute[1],data));
         if(path===`${base}/api/study-notes`&&req.method==='GET'){
           store.requireAccess(user.id);
           if(store.history(user.id).some(a=>a.status==='active'&&a.mode==='simulation'))throw new Problem(409,'Finish or submit your timed exam before opening study notes.');
@@ -194,7 +202,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         }
         throw new Problem(404,'Not found.');
       }
-      const files=new Map([[`${base}/student/google-signin.png`,['google-signin.png','image/png']],[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/study-ui.mjs`,['study-ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
+      const files=new Map([[`${base}/student/google-signin.png`,['google-signin.png','image/png']],[`${base}/student/`,['portal.html','text/html']],[`${base}/student/app.mjs`,['portal.mjs','text/javascript']],[`${base}/student/ui.mjs`,['ui.mjs','text/javascript']],[`${base}/student/study-ui.mjs`,['study-ui.mjs','text/javascript']],[`${base}/student/tools-ui.mjs`,['tools-ui.mjs','text/javascript']],[`${base}/student/styles.css`,['portal.css','text/css']]]);
       if(req.method==='GET'&&files.has(path)){const[file,type]=files.get(path);res.setHeader('Content-Type',`${type}; charset=utf-8`);return res.end(readFileSync(resolve(root,file)));}
       throw new Problem(404,'Not found.');
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e instanceof Problem?e.message:'Something went wrong. Please try again.'});else res.end();if(!(e instanceof Problem))console.error('Request failed:',e.name);}

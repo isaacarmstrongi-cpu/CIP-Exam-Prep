@@ -27,7 +27,7 @@ export function createLearning(store,Problem){
   const mocks=attempts.filter(a=>a.mode!=='study'&&a.status==='submitted'),first=new Map();for(const a of mocks)if(!first.has(a.set))first.set(a.set,a);
   const progress=mocks.slice(-10).map(a=>({id:a.id,exam:a.set-3,date:a.submittedAt,score:grade(a,s.bank).score,firstAttempt:first.get(a.set).id===a.id}));
   const active=attempts.filter(a=>a.status==='active').map(a=>({id:a.id,set:a.set,mode:a.mode||'simulation',index:a.index,count:questions(a).length,answered:Object.keys(a.answers).length,deadline:a.deadline}));
-  return {domains,priorities,progress,active,assessed:reviews.length,total:s.bank.length,missed:reviews.filter(r=>!r.last_correct).length,due:reviews.filter(r=>r.next_due<=s.now()).length,reservedExam:5,
+  return {confidence:s.tools.confidence(userId),domains,priorities,progress,active,assessed:reviews.length,total:s.bank.length,missed:reviews.filter(r=>!r.last_correct).length,due:reviews.filter(r=>r.next_due<=s.now()).length,reservedExam:5,
    firstAttemptAverage:first.size?Math.round([...first.values()].reduce((n,a)=>n+grade(a,s.bank).score,0)/first.size):null,firstAttemptCount:first.size,
    topics:priorities.slice(0,2).map(d=>{const qs=s.bank.filter(q=>q.domain===d.id&&byId.get(q.id)?.last_correct===0);return {domain:d.id,objectives:[...new Set(qs.map(q=>q.objective))].slice(0,4),references:qs.slice(0,2).map(q=>q.source)};})};
  }
@@ -53,7 +53,7 @@ export function createLearning(store,Problem){
  function check(userId,id){
   s.requireAccess(userId);const a=s.attempt(userId,id),qid=a.questionIds?.[a.index];
   if(a.mode!=='study'||a.status!=='active'||a.answers[qid]===undefined)throw new Problem(400,'Choose an answer in an active study session first.');
-  if(!a.checked.includes(qid)){db.exec('BEGIN IMMEDIATE');try{record(userId,qid,a.answers[qid]===s.bank.find(q=>q.id===qid).correctIndex);a.checked.push(qid);s.saveAttempt(userId,a);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
+  if(!a.checked.includes(qid)){db.exec('BEGIN IMMEDIATE');try{record(userId,qid,a.answers[qid]===s.bank.find(q=>q.id===qid).correctIndex);a.checked.push(qid);a.checkedAt??={};a.checkedAt[qid]=s.now();s.saveAttempt(userId,a);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
   return a;
  }
  return {questions,record,completed,insights,start,check};

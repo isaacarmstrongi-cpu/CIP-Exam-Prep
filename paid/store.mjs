@@ -6,6 +6,7 @@ import {createLearning} from './learning.mjs';
 import {createTrials} from './trials.mjs';
 import {createOwnerAlerts} from './owner-alerts.mjs';
 import {createSocialStore} from './social.mjs';
+import {createLearnerTools} from './learner-tools.mjs';
 const scrypt = promisify(scryptCallback);
 export const ACCESS_MS = 90 * 24 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -35,6 +36,7 @@ export class Store {
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='password_enabled'))this.db.exec('ALTER TABLE users ADD COLUMN password_enabled INTEGER NOT NULL DEFAULT 1');
     if(!this.db.prepare('PRAGMA table_info(sessions)').all().some(c=>c.name==='authenticated'))this.db.exec('ALTER TABLE sessions ADD COLUMN authenticated INTEGER NOT NULL DEFAULT 0');
     this.social=createSocialStore(this,Problem);
+    this.tools=createLearnerTools(this,Problem);
     this.ownerAlerts=createOwnerAlerts(this);
     this.learning=createLearning(this,Problem);
   }
@@ -140,6 +142,7 @@ export class Store {
     return {exportedAt:this.now(),account,purchases:this.db.prepare('SELECT id,created,expires,revoked FROM purchases WHERE user_id=? ORDER BY created').all(userId),
       attempts:this.db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).map(row=>JSON.parse(row.body)),
       reviewSchedule:this.db.prepare('SELECT question_id,last_correct,last_seen,next_due,streak,exposures FROM question_reviews WHERE user_id=?').all(userId),
+      learningTools:this.tools.exportData(userId),
       freeTrial:this.db.prepare('SELECT created,expires,version,terms,revoked FROM trial_access WHERE user_id=?').get(userId)||null,
       operationalAlerts:this.db.prepare('SELECT kind,occurred,status,sent FROM owner_alerts WHERE user_id=? ORDER BY occurred').all(userId),
       connectedSignins:this.social.methods(userId),
@@ -215,6 +218,11 @@ export class Store {
       if ('flagged' in change) {
         if(typeof change.flagged!=='boolean') throw new Problem(400,'Invalid flag.');
         a.flags=a.flags.filter(x=>x!==change.questionId); if(change.flagged)a.flags.push(change.questionId);
+      }
+      if ('confidence' in change) {
+        if(a.checked?.includes(change.questionId))throw new Problem(409,'Confidence is recorded before checking an answer.');
+        if(change.confidence!==null&&!['confident','unsure','guessing'].includes(change.confidence))throw new Problem(400,'Choose a valid confidence label.');
+        a.confidence??={};if(change.confidence===null)delete a.confidence[change.questionId];else a.confidence[change.questionId]=change.confidence;
       }
     }
     if ('index' in change) {

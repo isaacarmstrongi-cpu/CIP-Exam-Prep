@@ -6,7 +6,8 @@ import { randomUUID,createHash } from 'node:crypto';
 
 function inspect(db){
  if(db.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw new Error('Database integrity check failed.');
- return Object.fromEntries(['users','purchases','attempts'].map(table=>[table,db.prepare(`SELECT count(*) AS count FROM ${table}`).get().count]));
+ const optional=['study_plans','flashcard_progress'].filter(table=>db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table));
+ return Object.fromEntries(['users','purchases','attempts',...optional].map(table=>[table,db.prepare(`SELECT count(*) AS count FROM ${table}`).get().count]));
 }
 export async function snapshot(sourcePath,directory){
  mkdirSync(directory,{recursive:true,mode:0o700});chmodSync(directory,0o700);
