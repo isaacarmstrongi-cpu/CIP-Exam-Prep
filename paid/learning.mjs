@@ -1,5 +1,6 @@
 import {randomUUID,randomInt} from 'node:crypto';
 import {DOMAINS,BANK_VERSION,grade} from '../dist/core.mjs';
+import {lessons} from './study-content.mjs';
 const DAY=86400000;
 export function createLearning(store,Problem){
  const s=store,db=s.db;
@@ -30,13 +31,16 @@ export function createLearning(store,Problem){
    firstAttemptAverage:first.size?Math.round([...first.values()].reduce((n,a)=>n+grade(a,s.bank).score,0)/first.size):null,firstAttemptCount:first.size,
    topics:priorities.slice(0,2).map(d=>{const qs=s.bank.filter(q=>q.domain===d.id&&byId.get(q.id)?.last_correct===0);return {domain:d.id,objectives:[...new Set(qs.map(q=>q.objective))].slice(0,4),references:qs.slice(0,2).map(q=>q.source)};})};
  }
- function start(userId,{filter='weakest',count=10,domain=null}={}){
+ function start(userId,{filter='weakest',count=10,domain=null,lesson=null}={}){
   s.requireAccess(userId);
+  const focus=lesson===null?null:lessons.find(l=>l.id===lesson);
+  if(lesson!==null&&(!focus||(domain!==null&&domain!==focus.domain)))throw new Problem(400,'Choose an available lesson in the selected domain.');
   if(!['weakest','missed','flagged','unseen','due','all'].includes(filter)||![5,10,20].includes(count)||(domain!==null&&![1,2,3,4,5].includes(domain)))throw new Problem(400,'Choose a study mode, 5, 10 or 20 questions, and an available domain.');
-  const state=insights(userId),active=state.active.find(a=>a.mode==='study');if(active){const existing=s.attempt(userId,active.id);if(existing.filter!==filter||(existing.domain??null)!==domain)throw new Problem(409,'A study session is in progress. Resume or finish it before choosing a different focus.');return existing;}
+  const state=insights(userId),active=state.active.find(a=>a.mode==='study');if(active){const existing=s.attempt(userId,active.id);if(existing.filter!==filter||(existing.domain??null)!==domain||(existing.lesson??null)!==lesson)throw new Problem(409,'A study session is in progress. Resume or finish it before choosing a different focus.');return existing;}
   const rows=db.prepare('SELECT * FROM question_reviews WHERE user_id=?').all(userId),reviews=new Map(rows.map(r=>[r.question_id,r]));
   const flagged=new Set(db.prepare('SELECT body FROM attempts WHERE user_id=?').all(userId).flatMap(r=>JSON.parse(r.body).flags));
   let pool=s.bank.filter(q=>(q.set!==8||reviews.has(q.id))&&(!domain||q.domain===domain));
+  if(focus)pool=pool.filter(q=>focus.objectives.includes(q.objective));
   if(filter==='weakest')pool=pool.filter(q=>q.domain===(domain||state.priorities[0].id));
   if(filter==='missed')pool=pool.filter(q=>reviews.get(q.id)?.last_correct===0);
   if(filter==='flagged')pool=pool.filter(q=>flagged.has(q.id));
@@ -44,7 +48,7 @@ export function createLearning(store,Problem){
   if(filter==='due')pool=pool.filter(q=>reviews.has(q.id)&&reviews.get(q.id).next_due<=s.now());
   if(!pool.length)throw new Problem(400,filter==='due'?'No reviews are due yet. Try new questions or a weakest-domain session.':'No questions match yet. Try new questions or another domain.');
   for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}
-  const a={id:randomUUID(),mode:'study',filter,domain,set:0,version:BANK_VERSION,startedAt:s.now(),deadline:null,questionIds:pool.slice(0,count).map(q=>q.id),answers:{},flags:[],checked:[],index:0,status:'active'};s.saveAttempt(userId,a);return a;
+  const a={id:randomUUID(),mode:'study',filter,domain,lesson,set:0,version:BANK_VERSION,startedAt:s.now(),deadline:null,questionIds:pool.slice(0,count).map(q=>q.id),answers:{},flags:[],checked:[],index:0,status:'active'};s.saveAttempt(userId,a);return a;
  }
  function check(userId,id){
   s.requireAccess(userId);const a=s.attempt(userId,id),qid=a.questionIds?.[a.index];

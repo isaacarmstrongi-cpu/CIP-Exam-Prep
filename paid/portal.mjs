@@ -1,8 +1,18 @@
 import {dashboard,exam,results} from './ui.mjs';
+import {libraryPage,lessonPage} from './study-ui.mjs';
 const app=document.querySelector('#app'),notice=document.querySelector('#notice');
 const apiRoot=new URL('../api/',location.href);let session,view,clockOffset=0,busy=false,timer,resetToken,verifyToken,pendingSave=null,expiryRetryAt=0;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let inviteToken,trialInfo,socialProof;
+let notesIndex=[];
+async function openLibrary(domain='',query=''){
+ requireSaved();const data=await api('study-notes');notesIndex=data.lessons;clearInterval(timer);
+ app.innerHTML=libraryPage(notesIndex,{domain,query,hasSession:Boolean(view)});app.querySelector('h1')?.focus();window.scrollTo(0,0);
+}
+async function openNote(query){
+ requireSaved();const data=await api('study-notes?'+new URLSearchParams(query));clearInterval(timer);
+ app.innerHTML=lessonPage(data.lesson,data.sources,{hasSession:Boolean(view)});app.querySelector('h1')?.focus();window.scrollTo(0,0);
+}
 function socialOptions(purpose){
  const providers=(session.socialProviders||[]).filter(p=>purpose!=='link'||!session.connectedSignins.some(m=>m.provider===p.id));if(!providers.length)return '';
  const buttons=providers.map(p=>p.id==='google'?`<button class="secondary social-button google-button" name="provider" value="google" aria-label="${purpose==='link'?'Connect Google':'Sign in with Google'}"><img src="./google-signin.png" alt="Sign in with Google" width="204" height="45"></button>`:`<button class="secondary social-button" name="provider" value="${esc(p.id)}">${purpose==='link'?'Connect':'Continue with'} ${esc(p.label)}</button>`).join('');
@@ -33,6 +43,7 @@ function requireSaved(){if(pendingSave)throw new Error('Your last answer has not
 async function startPractice(filter='weakest',domain=null,count=10){requireSaved();setView(await api('practice','POST',{filter,domain,count}));}
 function filterReview(){const filter=document.querySelector('#filter')?.value,domain=document.querySelector('#review-domain')?.value;document.querySelectorAll('#review details').forEach(el=>{el.hidden=(filter==='missed'&&el.dataset.correct==='true')||(filter==='flagged'&&el.dataset.flagged!=='true')||(domain!=='all'&&el.dataset.domain!==domain);});}
 app.addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.target);
+ if(e.target.id==='notes-search')action(async()=>{app.innerHTML=libraryPage(notesIndex,{domain:data.get('domain'),query:data.get('query'),hasSession:Boolean(view)});app.querySelector('h1')?.focus();});
  if(e.target.dataset.socialPurpose)action(async()=>{const purpose=e.target.dataset.socialPurpose,provider=e.submitter.value;const result=await api('social/'+provider+'/start','POST',{purpose,...(purpose==='signup'?{invite:inviteToken,accepted:data.get('accepted')==='on',version:trialInfo.version}:{})});const url=new URL(result.url);if(url.protocol!=='https:'||!['accounts.google.com','login.microsoftonline.com'].includes(url.hostname))throw new Error('Unexpected sign-in address.');location.assign(url.href);});
  if(e.target.id==='social-profile')action(async()=>{await api('social/complete','POST',{proof:socialProof,email:data.get('email')});socialProof=undefined;clearInvite();await home();});
  if(e.target.id==='trial')action(async()=>{if(!session.user&&data.get('password')!==data.get('confirm'))throw new Error('The passwords do not match.');await api(session.user?'trial/activate':'trial/register','POST',{invite:inviteToken,accepted:data.get('accepted')==='on',version:trialInfo.version,...(!session.user?{email:data.get('email'),password:data.get('password')}:{})});clearInvite();await home();});
@@ -46,6 +57,12 @@ app.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.clo
 if(b.hasAttribute('data-cancel-submit')||b.hasAttribute('data-cancel-start')){b.closest('dialog').close();return;}
 if(b.hasAttribute('data-trial-signin'))return home(true);
 requireSaved();
+if(b.hasAttribute('data-library'))return openLibrary();
+if(b.hasAttribute('data-library-domain'))return openLibrary(b.dataset.libraryDomain);
+if(b.hasAttribute('data-note'))return openNote({id:b.dataset.note});
+if(b.hasAttribute('data-note-objective'))return openNote({objective:b.dataset.noteObjective});
+if(b.hasAttribute('data-return-session')){if(view){setView(await api('attempts/'+view.attempt.id));}else await home();return;}
+if(b.hasAttribute('data-practice-lesson'))return setView(await api('practice','POST',{filter:'all',count:10,lesson:b.dataset.practiceLesson}));
 if(b.hasAttribute('data-home'))return home();
 if(b.hasAttribute('data-practice'))return startPractice(b.dataset.practice);
 if(b.hasAttribute('data-study-domain'))return startPractice('weakest',Number(b.dataset.studyDomain));
