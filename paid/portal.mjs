@@ -23,7 +23,9 @@ if(b.dataset.start)return setView(await api('attempts','POST',{set:Number(b.data
 if(b.dataset.open)return setView(await api(`attempts/${b.dataset.open}`));
 if(b.hasAttribute('data-checkout')){const result=await api('checkout','POST',{});const url=new URL(result.url);if(url.hostname!=='checkout.stripe.com'||url.protocol!=='https:')throw new Error('Unexpected checkout address.');location.assign(url.href);return;}
 if(!view)return;const path=`attempts/${view.attempt.id}`,q=view.questions[view.attempt.index];
-if(b.hasAttribute('data-submit')){if(confirm(`Submit this exam? ${100-Object.keys(view.attempt.answers).length} questions are unanswered. You cannot change answers after submitting.`))setView(await api(`${path}/submit`,'POST',{}));}
+if(b.hasAttribute('data-submit')){const dialog=document.createElement('dialog');dialog.setAttribute('aria-labelledby','submit-title');dialog.innerHTML=`<h2 id="submit-title">Submit this exam?</h2><p>${100-Object.keys(view.attempt.answers).length} questions are unanswered. You cannot change answers after submitting.</p><div class="row"><button data-confirm-submit>Submit exam</button><button class="secondary" data-cancel-submit autofocus>Keep working</button></div>`;app.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();}
+if(b.hasAttribute('data-cancel-submit'))b.closest('dialog').close();
+if(b.hasAttribute('data-confirm-submit'))setView(await api(`${path}/submit`,'POST',{}));
 if(b.hasAttribute('data-index'))setView(await api(path,'PATCH',{index:Number(b.dataset.index)}));
 if(b.hasAttribute('data-clear'))setView(await api(path,'PATCH',{questionId:q.id,choice:null}));
 if(b.hasAttribute('data-flag'))setView(await api(path,'PATCH',{questionId:q.id,flagged:!view.attempt.flags.includes(q.id)}));
