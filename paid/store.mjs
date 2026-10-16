@@ -17,9 +17,12 @@ export class Store {
       CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS attempts(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),body TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS checkouts(user_id TEXT NOT NULL REFERENCES users(id),checkout_id TEXT PRIMARY KEY,url TEXT NOT NULL,expires INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS email_actions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),purpose TEXT NOT NULL,expires INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,expires INTEGER NOT NULL,count INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS attempts_owner ON attempts(user_id);
       CREATE INDEX IF NOT EXISTS purchases_owner ON purchases(user_id);
     `);
+    if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
   }
   async register(email, password) {
     email = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -28,7 +31,7 @@ export class Store {
     const salt = randomBytes(16).toString('hex');
     const key = await scrypt(password, salt, 64, { N: 32768, maxmem: 64 * 1024 * 1024 });
     const id = randomUUID();
-    try { this.db.prepare('INSERT INTO users VALUES(?,?,?,?)').run(id,email,`${salt}:${key.toString('hex')}`,this.now()); }
+    try { this.db.prepare('INSERT INTO users(id,email,password,created) VALUES(?,?,?,?)').run(id,email,`${salt}:${key.toString('hex')}`,this.now()); }
     catch (e) { if (e.code?.includes('CONSTRAINT') || e.message.includes('UNIQUE')) throw new Problem(409, 'Unable to create this account. Try signing in.'); throw e; }
     return this.newSession(id);
   }
@@ -46,8 +49,48 @@ export class Store {
     this.db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(hash(token),id,this.now()+7*86400000);
     return token;
   }
-  user(token='') { return this.db.prepare('SELECT u.id,u.email FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>?').get(hash(token),this.now()); }
+  user(token='') { const user=this.db.prepare('SELECT u.id,u.email,u.email_verified FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>?').get(hash(token),this.now());return user?{id:user.id,email:user.email,emailVerified:Boolean(user.email_verified)}:undefined; }
   logout(token) { this.db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token)); }
+  limit(key,max,window=60000){
+    const digest=hash(key),time=this.now();
+    this.db.prepare('DELETE FROM rate_limits WHERE expires<=?').run(time);
+    const row=this.db.prepare('INSERT INTO rate_limits VALUES(?,?,1) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').get(digest,time+window);
+    if(row.count>max)throw new Problem(429,'Please wait and try again.');
+  }
+  accountByEmail(email){return this.db.prepare('SELECT id,email FROM users WHERE email=?').get(typeof email==='string'?email.trim().toLowerCase():'');}
+  issueEmailAction(userId,purpose){
+    if(!['verify','reset'].includes(purpose))throw new Error('Invalid email action.');
+    const token=randomBytes(32).toString('base64url');
+    this.db.exec('BEGIN IMMEDIATE');
+    try{
+      this.db.prepare('DELETE FROM email_actions WHERE expires<=? OR (user_id=? AND purpose=?)').run(this.now(),userId,purpose);
+      this.db.prepare('INSERT INTO email_actions VALUES(?,?,?,?)').run(hash(token),userId,purpose,this.now()+(purpose==='reset'?30*60000:24*60*60000));
+      this.db.exec('COMMIT');return token;
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
+  emailAction(token,purpose){
+    if(typeof token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(token))throw new Problem(400,'This link is invalid or has expired. Request a new one.');
+    const row=this.db.prepare('SELECT user_id FROM email_actions WHERE token=? AND purpose=? AND expires>?').get(hash(token),purpose,this.now());
+    if(!row)throw new Problem(400,'This link is invalid or has expired. Request a new one.');return row.user_id;
+  }
+  verifyEmail(token){
+    this.db.exec('BEGIN IMMEDIATE');
+    try{const id=this.emailAction(token,'verify');this.db.prepare('UPDATE users SET email_verified=1 WHERE id=?').run(id);this.db.prepare('DELETE FROM email_actions WHERE user_id=? AND purpose=?').run(id,'verify');this.db.exec('COMMIT');}
+    catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
+  async resetPassword(token,password){
+    this.emailAction(token,'reset');
+    if(typeof password!=='string'||password.length<12||password.length>128)throw new Problem(400,'Use a password between 12 and 128 characters.');
+    const salt=randomBytes(16).toString('hex'),key=await scrypt(password,salt,64,{N:32768,maxmem:64*1024*1024});
+    this.db.exec('BEGIN IMMEDIATE');
+    try{
+      const id=this.emailAction(token,'reset');
+      this.db.prepare('UPDATE users SET password=? WHERE id=?').run(`${salt}:${key.toString('hex')}`,id);
+      this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(id);
+      this.db.prepare('DELETE FROM email_actions WHERE user_id=? AND purpose=?').run(id,'reset');
+      this.db.exec('COMMIT');
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
   access(id) {
     const row = this.db.prepare('SELECT MAX(expires) AS expires FROM purchases WHERE user_id=? AND revoked=0').get(id);
     return {active: (row.expires ?? 0) > this.now(),expires:row.expires ?? null};
