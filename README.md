@@ -1,6 +1,20 @@
-# Pro CIP Prep
+# Pro CIP Exam Prep
 
-A responsive, independent CIP practice application with 500 original questions in five 100-question exams (Sets 4–8).
+A responsive, independent CIP practice application with 500 original questions in five 100-question exams (Sets 4–8). The paid student portal and the original static demonstration are separate applications.
+
+## Paid student portal
+
+The `paid/` service runs on the existing Hostinger VPS with Node.js 24, SQLite, Stripe card checkout and Resend account emails. The package is $45 USD once for 90 days from confirmed payment, with unlimited practice retakes. Public enrollment remains closed until the launch requirements in `paid/OPERATIONS.md` are resolved.
+
+The portal stores accounts and attempts on the server, verifies email ownership, supports single-use password recovery, and invalidates sessions after a password reset. Its server controls exam deadlines and grading and withholds answer keys until submission. Signed payment events grant access once; full refunds and disputes revoke it. Request limits survive service restarts. A backup tool creates checked snapshots and verifies restoration in isolation.
+
+Run `npm ci`, then configure the protected settings documented in `paid/OPERATIONS.md` before starting `node paid/server.mjs`. Never put credentials in Git or serve the repository root or `dist/` as the paid portal. The repository has previously been public, including question-bank history; private hosting alone cannot retract prior copies.
+
+`npm test` covers both applications. Deployment checks have also included a real Stripe sandbox purchase and server-side backup restoration. Those results do not establish tax readiness, legal-policy approval, real email delivery or permission to open enrollment.
+
+## Original static demonstration
+
+The following browser-storage and static-hosting instructions describe the original demonstration only.
 
 ## Student experience
 
@@ -24,7 +38,7 @@ The 80% overall / 75% per-domain practice targets are study goals, not official 
 
 ## Run locally
 
-Use a current Node.js version supporting ES modules and `node:test`. No dependency installation is required.
+Use Node.js 24 and install locked dependencies with `npm ci` so the combined automated checks can run.
 
 ```sh
 npm run dev
@@ -68,13 +82,3 @@ A private Sites deployment is configured in `.openai/hosting.json`. GitHub pushe
 ## Verification performed
 
 Automated tests check 500 unique items, five weighted forms, all correct-letter positions, source locators, perfect/incorrect/partial scoring, deadline behavior, invalid saved data, and manual submission. Browser checks cover starting an exam, selecting an answer, flagging, navigation, refresh/resume, scoring, answer filtering, and desktop/mobile layout.
-
-## Student portal (in development — enrollment closed)
-
-The `paid/` service adds server-stored student accounts and attempts, signed Stripe payment confirmation, 90-day entitlements, and server-authoritative scoring and deadlines. Run with Node 24 and `PUBLIC_ORIGIN` set; the entry point is `paid/server.mjs`. Stripe configuration and `ENROLLMENT_OPEN=true` are required for checkout. Keep enrollment closed until verification is complete.
-
-Never serve the repository root or the `dist` demo as the paid portal. The HTTP service exposes only its explicit student assets and API routes. Keep the database and complete question bank outside the public web directory. Secrets belong in protected server configuration, never in source control.
-
-Before launch: complete email verification/account recovery, production rate limiting, Stripe sandbox purchase testing, private deployment and backups, refund/privacy/tax configuration, and review historical public question-bank exposure. The current implementation is not launch-ready.
-
-`npm test` includes access-expiry, payment replay/refund, ownership, hidden answer keys, timing, authentication, origin and webhook-signature checks. These tests do not replace a real Stripe sandbox checkout and deployment test.

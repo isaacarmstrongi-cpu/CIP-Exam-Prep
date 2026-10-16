@@ -1,5 +1,5 @@
 const app=document.querySelector('#app'),notice=document.querySelector('#notice');
-const apiRoot=new URL('../api/',location.href);let session,view,clockOffset=0,busy=false,timer,resetToken;
+const apiRoot=new URL('../api/',location.href);let session,view,clockOffset=0,busy=false,timer,resetToken,verifyToken;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,method='GET',body){const res=await fetch(new URL(path,apiRoot),{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const result=await res.json();if(!res.ok)throw new Error(result.error);return result;}
 function message(s=''){notice.textContent=s;}
@@ -24,6 +24,7 @@ app.addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.t
 });
 app.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.closest('form'))return;action(async()=>{
 if(b.hasAttribute('data-home'))return home();
+if(b.hasAttribute('data-verify-email')){await api('verify-email','POST',{token:verifyToken});verifyToken=undefined;await home();message('Your email address is verified.');return;}
 if(b.hasAttribute('data-forgot')){app.innerHTML='<section class="card auth"><h1>Reset your password</h1><p>Enter your account email. If it matches an account, we will send a link that expires after 30 minutes.</p><form id="forgot"><label>Email<input type="email" name="email" autocomplete="email" required maxlength="254"></label><button>Send reset link</button></form><button class="secondary" data-home>Back to sign in</button></section>';return;}
 if(b.hasAttribute('data-resend')){await api('resend-verification','POST',{});message('If your address is not yet verified, a new link will be sent. Check your inbox and spam folder.');return;}
 if(b.dataset.start)return setView(await api('attempts','POST',{set:Number(b.dataset.start)}));
@@ -40,10 +41,10 @@ if(b.hasAttribute('data-flag'))setView(await api(path,'PATCH',{questionId:q.id,f
 app.addEventListener('change',e=>{if(e.target.name==='answer'){const a=view.attempt;action(async()=>setView(await api(`attempts/${a.id}`,'PATCH',{questionId:view.questions[a.index].id,choice:Number(e.target.value)})));}if(e.target.id==='filter')document.querySelectorAll('#review details').forEach(el=>el.hidden=e.target.value==='missed'?el.dataset.correct==='true':e.target.value==='flagged'?el.dataset.flagged!=='true':false);});
 document.querySelector('#logout').addEventListener('click',()=>action(async()=>{await api('logout','POST',{});await home();}));
 async function openEmailAction(){
- const fragment=new URLSearchParams(location.hash.slice(1));const verification=fragment.get('verify');resetToken=fragment.get('reset');
- if(verification||resetToken)history.replaceState(null,'',location.pathname+location.search);
+ const fragment=new URLSearchParams(location.hash.slice(1));verifyToken=fragment.get('verify');resetToken=fragment.get('reset');
+ if(verifyToken||resetToken)history.replaceState(null,'',location.pathname+location.search);
  if(resetToken){app.innerHTML='<section class="card auth"><h1>Choose a new password</h1><p>Use a unique password between 12 and 128 characters.</p><form id="reset"><label>New password<input type="password" name="password" autocomplete="new-password" required minlength="12" maxlength="128"></label><label>Confirm new password<input type="password" name="confirm" autocomplete="new-password" required minlength="12" maxlength="128"></label><button>Save new password</button></form><button class="secondary" data-home>Back to sign in</button></section>';return;}
- if(verification){try{await api('verify-email','POST',{token:verification});await home();message('Your email address is verified.');}catch(e){await home();message(e.message);}return;}
+ if(verifyToken){app.innerHTML='<section class="card auth"><h1>Confirm your email address</h1><p>Select the button below to verify the address used for your practice account. This link expires after 24 hours and works once.</p><button data-verify-email>Verify my email</button><p class="muted">If you did not request this, close this page.</p></section>';return;}
  await home();
 }
 window.addEventListener('hashchange',()=>action(openEmailAction));
