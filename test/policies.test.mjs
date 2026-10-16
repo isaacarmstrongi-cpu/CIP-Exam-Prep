@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {Store} from '../paid/store.mjs';
 import {createApp} from '../paid/server.mjs';
 import {POLICY_VERSION,POLICY_DIGEST,policySnapshot} from '../paid/policies.mjs';
+import {createHash} from 'node:crypto';
 const bank=JSON.parse(readFileSync(new URL('../dist/data/questions.json',import.meta.url)));
 const policy={version:POLICY_VERSION,digest:POLICY_DIGEST,document:policySnapshot};
 const password='Isolated policy test password 123!';
@@ -59,4 +60,24 @@ test('live sales remain closed after policy approval until the separate launch r
  const server=createApp({store,origin:'https://example.test',live:true,enrollment:true,policiesApproved:true,launchApproved:false,mailer:async()=>{},stripe:{},price:'price',webhookSecret:'test'});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
  const state=await(await fetch(`http://127.0.0.1:${server.address().port}/mcip/api/session`)).json();assert.equal(state.policies.approved,true);assert.equal(state.enrollment,false);assert.equal(state.registrationOpen,false);
+});
+
+test('purchase confirmations preserve purchased wording, stay private and remain downloadable after access expires',async t=>{
+ let clock=1800000000000;const store=new Store(':memory:',bank,()=>clock);t.after(()=>store.db.close());
+ const own=await store.register('own@example.test',password),other=await store.register('other@example.test',password),user=store.user(own);
+ const archived={version:'earlier-version',documents:{terms:{title:'Purchased terms',sections:[['Original promise','Original wording <script>alert(1)</script>']]}}};
+ const document=JSON.stringify(archived),digest=createHash('sha256').update(document).digest('hex');
+ store.acceptPolicies(user.id,{version:archived.version,digest,document});
+ const session={id:'cs_original',client_reference_id:user.id,mode:'payment',payment_status:'paid',currency:'usd',amount_subtotal:4500,payment_intent:'pi_original',livemode:false,line_items:{data:[{price:{id:'price'},quantity:1}]},metadata:{policy_version:archived.version,policy_digest:digest},url:'https://checkout.stripe.com/example',expires_at:clock/1000+3600};
+ store.rememberCheckout(user.id,session,archived.version);
+ store.rememberPayment({id:'evt_original',created:clock/1000,livemode:false},session,'price',false,true);
+ assert.throws(()=>store.rememberPayment({id:'evt_forged',created:clock/1000,livemode:false},{...session,metadata:{policy_version:POLICY_VERSION,policy_digest:POLICY_DIGEST}},'price',false,true),{status:400});
+ clock+=91*86400000;assert.equal(store.access(user.id).active,false);
+ const fresh=await store.login('own@example.test',password),otherFresh=await store.login('other@example.test',password);
+ const server=createApp({store,origin:'https://example.test',secure:false});await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const endpoint=`http://127.0.0.1:${server.address().port}/mcip/api/purchase-confirmations`;
+ assert.equal((await fetch(endpoint)).status,401);
+ const response=await fetch(endpoint,{headers:{Cookie:`procip_session=${fresh}`}});assert.equal(response.status,200);assert.match(response.headers.get('content-disposition'),/attachment/);
+ const html=await response.text();assert.match(html,/Original wording &lt;script&gt;/);assert.match(html,/earlier-version/);assert.doesNotMatch(html,/<script>|other@example|password hash/);
+ assert.match(await(await fetch(endpoint,{headers:{Cookie:`procip_session=${otherFresh}`}})).text(),/No confirmed purchases/);
 });

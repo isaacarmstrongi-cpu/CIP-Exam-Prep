@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import { isIP } from 'node:net';
 import { Store, Problem } from './store.mjs';
 import { createEmailSender } from './email.mjs';
-import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage} from './policies.mjs';
+import {POLICY_VERSION,POLICY_DIGEST,policySnapshot,policyPage,purchaseConfirmationPage} from './policies.mjs';
 const root=dirname(fileURLToPath(import.meta.url));
 export function clientAddress(req,trustProxy=false){
   const peer=req.socket.remoteAddress;
@@ -40,7 +40,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         if(event.livemode!==live)throw new Problem(400,'Payment environment does not match.');
         if(event.type==='checkout.session.completed'){
           const session=await stripe.checkout.sessions.retrieve(event.data.object.id,{expand:['line_items']});
-          store.rememberPayment(event,session,price,live,policiesApproved?POLICY_VERSION:null);
+          store.rememberPayment(event,session,price,live,policiesApproved);
         } else if(event.type==='charge.refunded'){
           // Retrieve the current charge so out-of-order events cannot undo a refund.
           const charge=await stripe.charges.retrieve(event.data.object.id);
@@ -79,6 +79,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
         }
         if(!user)throw new Problem(401,'Please sign in.');
         if(path===`${base}/api/account-data`&&req.method==='GET'){res.setHeader('Content-Disposition','attachment; filename="pro-cip-account-data.json"');return json(res,200,store.accountExport(user.id));}
+        if(path===`${base}/api/purchase-confirmations`&&req.method==='GET'){res.setHeader('Content-Disposition','attachment; filename="pro-cip-purchase-confirmations.html"');res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(purchaseConfirmationPage(store.purchaseConfirmations(user.id),{sandbox:!live}));}
         if(path===`${base}/api/logout`&&req.method==='POST'){store.logout(token);return json(res,200,{ok:true},{'Set-Cookie':cookie('')});}
         if(path===`${base}/api/resend-verification`&&req.method==='POST'){
           if(!mailer)throw new Problem(503,'Email delivery is not available yet.');
@@ -120,6 +121,7 @@ export function createApp({store,origin,base='/mcip',stripe,price,webhookSecret,
 }
 if(process.argv[1]&&realpathSync(process.argv[1])===fileURLToPath(import.meta.url)){
   const origin=process.env.PUBLIC_ORIGIN;if(!origin)throw new Error('PUBLIC_ORIGIN is required.');
+  if(process.env.POLICIES_APPROVED==='true'&&(!process.env.SELLER_PUBLIC_ADDRESS?.trim()||process.env.RETENTION_ENABLED!=='true'))throw new Error('Published policies require the approved public seller address and enabled retention maintenance.');
   const local=origin.startsWith('http://127.0.0.1:');if(!local&&!origin.startsWith('https://'))throw new Error('HTTPS is required.');
   const bank=JSON.parse(readFileSync(process.env.BANK_PATH||resolve(root,'../dist/data/questions.json'),'utf8'));
   const dbPath=process.env.DATABASE_PATH||resolve(root,'../private/students.sqlite');mkdirSync(dirname(dbPath),{recursive:true,mode:0o700});

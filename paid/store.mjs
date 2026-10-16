@@ -26,6 +26,7 @@ export class Store {
       CREATE INDEX IF NOT EXISTS purchases_owner ON purchases(user_id);
     `);
     if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='email_verified'))this.db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
+    if(!this.db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='retired'))this.db.exec('ALTER TABLE users ADD COLUMN retired INTEGER NOT NULL DEFAULT 0');
   }
   async register(email, password) {
     email = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -40,19 +41,20 @@ export class Store {
   }
   async login(email, password) {
     if (typeof password !== 'string' || password.length > 128) throw new Problem(401, 'Email or password is incorrect.');
-    const user = this.db.prepare('SELECT * FROM users WHERE email=?').get(String(email).trim().toLowerCase());
+    const user = this.db.prepare('SELECT * FROM users WHERE email=? AND retired=0').get(String(email).trim().toLowerCase());
     const [salt, stored] = (user?.password || `${'0'.repeat(32)}:${'0'.repeat(128)}`).split(':');
     const key = await scrypt(password, salt, 64, { N: 32768, maxmem: 64 * 1024 * 1024 });
     if (!timingSafeEqual(key,Buffer.from(stored,'hex')) || !user) throw new Problem(401, 'Email or password is incorrect.');
     return this.newSession(user.id);
   }
   newSession(id) {
+    if(!this.db.prepare('SELECT 1 FROM users WHERE id=? AND retired=0').get(id))throw new Problem(401,'Please create or sign in to an active account.');
     const token = randomBytes(32).toString('base64url');
     this.db.prepare('DELETE FROM sessions WHERE expires<=?').run(this.now());
     this.db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(hash(token),id,this.now()+7*86400000);
     return token;
   }
-  user(token='') { const user=this.db.prepare('SELECT u.id,u.email,u.email_verified FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>?').get(hash(token),this.now());return user?{id:user.id,email:user.email,emailVerified:Boolean(user.email_verified)}:undefined; }
+  user(token='') { const user=this.db.prepare('SELECT u.id,u.email,u.email_verified FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND u.retired=0').get(hash(token),this.now());return user?{id:user.id,email:user.email,emailVerified:Boolean(user.email_verified)}:undefined; }
   logout(token) { this.db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token)); }
   limit(key,max,window=60000){
     const digest=hash(key),time=this.now();
@@ -60,7 +62,7 @@ export class Store {
     const row=this.db.prepare('INSERT INTO rate_limits VALUES(?,?,1) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').get(digest,time+window);
     if(row.count>max)throw new Problem(429,'Please wait and try again.');
   }
-  accountByEmail(email){return this.db.prepare('SELECT id,email FROM users WHERE email=?').get(typeof email==='string'?email.trim().toLowerCase():'');}
+  accountByEmail(email){return this.db.prepare('SELECT id,email FROM users WHERE email=? AND retired=0').get(typeof email==='string'?email.trim().toLowerCase():'');}
   issueEmailAction(userId,purpose){
     if(!['verify','reset'].includes(purpose))throw new Error('Invalid email action.');
     const token=randomBytes(32).toString('base64url');
@@ -129,8 +131,11 @@ export class Store {
       policyAgreements:this.db.prepare('SELECT a.version,a.accepted,d.digest FROM policy_acceptances a JOIN policy_documents d USING(version) WHERE a.user_id=? ORDER BY a.accepted').all(userId),
       checkoutAgreements:this.db.prepare('SELECT checkout_id,version,accepted FROM checkout_agreements WHERE user_id=? ORDER BY accepted').all(userId)};
   }
+  purchaseConfirmations(userId){
+    return this.db.prepare('SELECT p.id,p.created,p.expires,p.revoked,a.accepted,a.version,d.digest,d.document FROM purchases p JOIN checkout_agreements a ON a.checkout_id=p.id AND a.user_id=p.user_id JOIN policy_documents d ON d.version=a.version WHERE p.user_id=? ORDER BY p.created DESC').all(userId);
+  }
   requireAccess(id) { if (!this.access(id).active) throw new Problem(403,'An active practice package is required.'); }
-  rememberPayment(event, session, expectedPrice, live, policyVersion=null) {
+  rememberPayment(event, session, expectedPrice, live, requireAgreement=false) {
     if (event.livemode !== live || session.livemode !== live) throw new Problem(400,'Payment environment does not match.');
     const items = session.line_items?.data;
     if (session.mode !== 'payment' || session.payment_status !== 'paid' || session.currency !== 'usd' ||
@@ -139,7 +144,11 @@ export class Store {
     const userId = session.client_reference_id;
     const checkout = this.db.prepare('SELECT * FROM checkouts WHERE checkout_id=? AND user_id=?').get(session.id,userId);
     if (!checkout) throw new Problem(400,'Payment is not associated with a student checkout.');
-    if(policyVersion&&!this.db.prepare('SELECT 1 FROM checkout_agreements WHERE checkout_id=? AND user_id=? AND version=?').get(session.id,userId,policyVersion))throw new Problem(400,'Payment is missing the required student agreement.');
+    if(requireAgreement){
+      const receipt=this.db.prepare('SELECT a.version,d.digest FROM checkout_agreements a JOIN policy_documents d ON d.version=a.version WHERE a.checkout_id=? AND a.user_id=?').get(session.id,userId);
+      if(!receipt)throw new Problem(400,'Payment is missing the required student agreement.');
+      if(session.metadata&&(session.metadata.policy_version!==receipt.version||session.metadata.policy_digest!==receipt.digest))throw new Problem(400,'Payment agreement does not match the recorded checkout.');
+    }
     this.db.exec('BEGIN IMMEDIATE');
     try {
       if (!this.db.prepare('SELECT id FROM events WHERE id=?').get(event.id)) {
